@@ -1,8 +1,44 @@
-.header {
-    font-size: 5.0rem;
-    margin-top: 1.0rem;
+body {
+    margin: 0;
+    padding: 0;
+    font-family: "Lucida Console", Monaco, monospace;
+    color: black;
 }
 
-.input-msg {
-    width: 80%;
+#chatapp {
+    color: white;
+    position: absolute
+}
+
+#loading-screen {
+    background: white;
+}
+
+#game-screen {
+    display: none;
+    background: black;
+}
+
+
+.keys {
+    margin-top: -16vh;
+    position: absolute;
+}
+
+.keys img {
+    width: 8vw;
+}
+
+#btn-fullscreen {
+     margin-left: 2vw;   
+}
+
+#chat-input {
+    width: 90vw;
+    color: black;
+}
+
+#chat-send {
+    width: 10vw;
+    background: darkgray;
 }

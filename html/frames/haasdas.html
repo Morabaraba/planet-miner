@@ -1,0 +1,35 @@
+<pre>
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+&nbsp;
+                                                              .".
+                                                             /  |
+                                                            /  /
+                                                           / ,"
+                                               .-------.--- /
+                                              "._ __.-/ o. o\  
+                                                 "   (    Y  )
+                                                      )     /
+                                                     /     (
+                                                    /       Y
+                                                .-"         |
+                                               /  _     \    \ 
+                                              /    `. ". ) /' )
+                                             Y       )( / /(,/
+                                            ,|      /     )
+                                           ( |     /     /
+                                            " \_  (__   (__
+                                                "-._,)--._,)
+                                                <span id="loading">Loading...</span>
+</pre>
+<script>
+    var loading = document.getElementById('loading');
+    setInterval(function(){ 
+        var text = loading.innerText.split('');
+        text.push(text[0]);
+        text.shift();
+        loading.innerText = text.join('');
+    }, 200);
+</script>

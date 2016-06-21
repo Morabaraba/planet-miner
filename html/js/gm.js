@@ -34,7 +34,8 @@
     
     gm.actionPlayer = function(msg) {
         if (!msg) {
-            chat.mq.send({type: 'act'});
+            // $@#$ HACK TODO
+            chat.mq.send({type: 'act', });
             return;
         }
         var player = gm.players[msg.clientId];
@@ -83,7 +84,7 @@ function gofull() {
     //game.scale.fullScreenScaleMode = Phaser.ScaleManager.SHOW_ALL;
     //game.scale.windowConstraints.right =  'visual';
     //game.scale.windowConstraints.bottom = 'visual';
-    var wrapper = document.getElementById('wrapper')
+    var wrapper = document.getElementById('game-screen')
     game.scale.fullScreenTarget = wrapper;
     // {"right":"layout","bottom":""}
     if (game.scale.isFullScreen)
@@ -96,7 +97,6 @@ function gofull() {
     }
 
 }
-
 
 var button = document.querySelector('#btn-fullscreen');
 button.addEventListener('click', gofull);

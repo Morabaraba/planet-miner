@@ -19,7 +19,7 @@ chat.config = {
         password: 'pleasebegentle',
         keepAliveInterval: 60 * 10 // 60 sec * 10 = 10 min
     },
-    filter: 'lobby'
+    filter: 'lobby.beta'
 };
 
 // Wraps our messages with created timestamp, text and clientId
@@ -51,7 +51,7 @@ chat.Message.prototype.mqtt = function(filter) {
         t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now())
     } else
     if (this.msg.type == this.types.ACTION) {
-        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now())
+        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), this.msg.floor)
     } else 
     {
         console.error('unknown type for mqtt', msg)
@@ -90,7 +90,7 @@ chat.mq.init = function() {
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
     chat.mq.client.subscribe(chat.config.filter);
-    var message = new chat.Message("has entered.");
+    var message = new chat.Message("has entered " + chat.config.filter + ".");
     chat.mq.client.send(message.mqtt());
     startGame ? startGame() : null; 
 }
@@ -267,11 +267,11 @@ chat.view = function() {
         m("form", {
             onsubmit: chat.vm.post
         }, [
-            m("input[id=chat-input][type=text][placeholder=Enter message...].input-msg", {
+            m("input[id=chat-input][type=text][placeholder=Enter message...]", {
                 oninput: m.withAttr("value", chat.vm.messageText),
                 value: chat.vm.messageText()
             }),
-            m("button[type=submit]", "Send"),
+            m("button[id=chat-send][type=submit]", "Send"),
             m("div", 
                 chat.vm.list.filter(function(msg) {
                     return msg.msg.type === 'msg';

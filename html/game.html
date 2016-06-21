@@ -1,0 +1,62 @@
+<!-- fake fields are a workaround for chrome autofill getting the wrong fields -->
+<input style="display:none" type="text" name="fakeusernameremembered"/>
+<input style="display:none" type="password" name="fakepasswordremembered"/>
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css">
+<link rel="stylesheet" href="css/custom.css">
+<div id="loading-screen">
+    <pre>
+&nbsp;
+&nbsp;
+&nbsp;
+                                                      .".
+                                                     /  |
+                                                    /  /
+                                                   / ,"
+                                       .-------.--- /
+                                      "._ __.-/ o. o\  
+                                         "   (    Y  )
+                                              )     /
+                                             /     (
+                                            /       Y
+                                        .-"         |
+                                       /  _     \    \ 
+                                      /    `. ". ) /' )
+                                     Y       )( / /(,/
+                                    ,|      /     )
+                                   ( |     /     /
+                                    " \_  (__   (__
+                                        "-._,)--._,)
+                                        <span id="loading">Loading...</span>
+</pre>
+    <script>
+        var loading = document.getElementById('loading');
+        setInterval(function() {
+            var text = loading.innerText.split('');
+            text.push(text[0]);
+            text.shift();
+            loading.innerText = text.join('');
+        }, 200);
+    </script>
+</div>
+<div id="game-screen">
+    <div id="chatapp"></div>
+    <div id=phaser></div>
+    <div class="keys">
+        <img id="btn-fullscreen" src="images/Blank_White_Resize.png"></img>
+        <img id="btn-left" src="images/Keyboard_White_Arrow_Left.png"></img>
+        <img id="btn-right" src="images/Keyboard_White_Arrow_Right.png"></img>
+        <img id="btn-alt" src="images/Keyboard_White_Alt.png"></img>
+        <img id="btn-ctrl" src="images/Keyboard_White_Ctrl.png"></img>
+    </div>
+</div>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/phaser/2.5.0/phaser.min.js"></script>
+<script src="//cdn.jsdelivr.net/mithril/0.2.4/mithril.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+<script src="//cdn.jsdelivr.net/lodash/4.13.1/lodash.core.js"></script>
+<script type="text/javascript" src="js/bert.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/game.js"></script>
+<script type="text/javascript" src="js/gm.js"></script>
