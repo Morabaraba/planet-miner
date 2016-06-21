@@ -1,65 +1,73 @@
-<!DOCTYPE html>
-<html lang="en">
-  
-<head>
-    <!-- Basic Page Needs
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <meta charset="utf-8">
-    <title>Haasdas</title>
-    <meta name="description" content="">
-    <meta name="author" content="">
+<div id=wrapper class=center>
+    <div id="chatapp"></div>
+    <div id=phaser></div>
+    <div class="keys">
+        <img id="btn-fullscreen" src="images/Blank_White_Resize.png"></img>
+        <img id="btn-left" src="images/Keyboard_White_Arrow_Left.png"></img>
+        <img id="btn-right" src="images/Keyboard_White_Arrow_Right.png"></img>
+        <img id="btn-alt" src="images/Keyboard_White_Alt.png"></img>
+        <img id="btn-ctrl" src="images/Keyboard_White_Ctrl.png"></img>
+    </div>
+</div>
 
-    <!-- Mobile Specific Metas
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+    background: black;
+	font-family: "Courier New", Courier, "Lucida Sans Typewriter", "Lucida Typewriter", monospace;
+	font-size: 10px;
+	font-style: normal;
+	font-variant: normal;
+	font-weight: 400;
+	line-height: 20px;
+	display:none;
+}
 
-  <!-- FONT
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-  <link href="//fonts.googleapis.com/css?family=Raleway:400,300,600" rel="stylesheet" type="text/css">
+button#fullscreen {
+    margin-top: 7px;
+    position: absolute;
+    /* margin-left: 10px;*/
+}
 
-    <!-- CSS
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/normalize/3.0.3/normalize.min.css">
-    <link rel="stylesheet" href="//cdn.jsdelivr.net/skeleton/2.0.4/css/skeleton.css">
-    <link rel="stylesheet" href="css/custom.css">
+#chatapp {
+    color: white;
+    position: absolute;
+    /* top: -18px; */
+    left: 6px;
+}
 
-    <!-- Favicon
-  –––––––––––––––––––––––––––––––––––––––––––––––––– 
-    <link rel="icon" type="image/png" href="images/favicon.png"> -->
+.chatline {
+    height: 11px;
+}
 
-    <!-- JavaScript Libs
-    <script src="//cdn.jsdelivr.net/marked/0.3.5/marked.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/pouchdb/5.4.4/pouchdb.min.js"></script>
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <script src="//cdn.jsdelivr.net/mithril/0.2.4/mithril.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
-    <script src="//cdn.jsdelivr.net/lodash/4.13.1/lodash.core.js"></script>
-</head>
+.input-msg {
+    width: 746px;
+}
 
-<body>
+.keys {
+    margin-top: -32px;
+    position: absolute;
+    left: 8px;
+    width: 800px;
+}
+.keys img {
+    width: 32px;
+}
+.center{
+    left:25%;
+    /*width:50%;*/
+    height:50%;
+    top:10%;
+    position:absolute;
+    /* text-align:center;
+    */}
+</style>
 
-    <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <div class="container">
-        <div class="row header">
-        </div>
-        <div class="row">
-            <div class="column">
-                <div id="chatapp" class="row"></div>
-            </div>
-        </div>
-
-        <!-- JavaScript App
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-        <script src="js/main.js"></script>
-        <!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-        <noscript>
-            Unfortunatly this is a js app, redirecting you to the markdown index...
-            <meta http-equiv="refresh" content="0;url=md/index.md">
-        </noscript>
-        
-</body>
-
-</html>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/phaser/2.5.0/phaser.min.js"></script>
+<script src="//cdn.jsdelivr.net/mithril/0.2.4/mithril.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
+<script src="//cdn.jsdelivr.net/lodash/4.13.1/lodash.core.js"></script>
+<script type="text/javascript" src="js/bert.js"></script>
+<script type="text/javascript" src="js/main.js"></script>
+<script type="text/javascript" src="js/game.js"></script>
+<script type="text/javascript" src="js/gm.js"></script>
