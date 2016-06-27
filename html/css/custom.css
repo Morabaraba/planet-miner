@@ -42,3 +42,8 @@ body {
     width: 10vw;
     background: darkgray;
 }
+
+#loading {
+    text-align: center;
+    width: 98vw;
+}

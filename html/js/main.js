@@ -1,26 +1,21 @@
+// Paho is our mqtt client lib
 /* global Paho */
+// Marked is a Markdown parser
 /* global marked */
+// m is our mvc
 /* global m */
+// underscore is a functional utility lib
 /* global _ */
+// Bert encodes and decodes our payload
 /* global Bert */
+// Handles time just a bit better in js
 /* global moment */
 
-// our chat namespace
+/** @namespace our chat namespace */
 var chat = {};
 
-chat.config = {
-    hostname: 'haasdas-morabaraba.c9users.io',
-    port: 443,
-    path: '/ws',
-    clientId: "Anon" + Math.trunc(Math.random() * 1000),
-    connectOptions: {
-        useSSL: true,
-        userName: 'anon',
-        password: 'pleasebegentle',
-        keepAliveInterval: 60 * 10 // 60 sec * 10 = 10 min
-    },
-    filter: 'lobby.beta'
-};
+// source our chat config from the gm.
+chat.config = gm.config.chat;
 
 // Wraps our messages with created timestamp, text and clientId
 chat.Message = function(text) {
@@ -38,20 +33,23 @@ chat.Message = function(text) {
     this.text = m.prop(msg.text);
 };
 
+chat.Message.prototype.sessionId = function() {
+    return chat.config.clientId //+ '-' + gm.config.game.player.nick;
+}
 // convert a Message to a Paho Mqtt message
-chat.Message.prototype.mqtt = function(filter) {
+chat.Message.prototype.mqtt = function(topic) {
     var t;
     if (this.msg.type == this.types.MESSAGE) {
-        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), this.msg.text)
+        t = Bert.tuple(this.msg.type, this.sessionId()  , Date.now(), this.msg.text)
     } else
     if (this.msg.type == this.types.MOVE) {
-        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), this.msg.x, this.msg.y, this.msg.idle)
+        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.x, this.msg.y, this.msg.idle)
     } else
     if (this.msg.type == this.types.CREATE) {
-        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now())
+        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now())
     } else
     if (this.msg.type == this.types.ACTION) {
-        t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), this.msg.floor)
+        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.floor)
     } else 
     {
         console.error('unknown type for mqtt', msg)
@@ -59,7 +57,7 @@ chat.Message.prototype.mqtt = function(filter) {
         return;
     }
     var message = new Paho.MQTT.Message(Bert.encode(t));
-    message.destinationName = filter || chat.config.filter;
+    message.destinationName = topic || chat.config.topic;
     return message;
 }
 chat.Message.prototype.types = {
@@ -80,19 +78,26 @@ chat.mq.init = function() {
         Number(chat.config.port),
         chat.config.path,
         chat.config.clientId);
+    
+    // hook our mq callbacks
     this.client.onConnectionLost = chat.mq.onConnectionLost;
     this.client.onMessageArrived = chat.mq.onMessageArrived;
-    chat.config.connectOptions.onSuccess = chat.mq.onConnect;
-    chat.config.connectOptions.onFailure = chat.mq.onFailure;
-    chat.config.connectOptions.willMessage = (new chat.Message('have left.')).mqtt();
-    this.client.connect(_.clone(chat.config.connectOptions));
+    
+    /* hook up our chat onConnect and onFailure functions to our mqtt connection options */
+    gm.config.mqtt.onSuccess = chat.mq.onConnect;
+    gm.config.mqtt.onFailure = chat.mq.onFailure;
+    gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
+    // we shallow clone our connectOptions so that if we reconnect we don't inherit previous connection information.
+    this.client.connect(_.clone(gm.config.mqtt));
 }
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
-    chat.mq.client.subscribe(chat.config.filter);
-    var message = new chat.Message("has entered " + chat.config.filter + ".");
+    chat.mq.client.subscribe(chat.config.topic);
+    chat.mq.client.subscribe(chat.config.topic);
+    var message = new chat.Message("has entered " + chat.config.topic + ".");
     chat.mq.client.send(message.mqtt());
-    startGame ? startGame() : null; 
+    
+    
 }
 // called when the client connects
 chat.mq.onFailure = function() {
@@ -101,6 +106,7 @@ chat.mq.onFailure = function() {
         JSON.stringify(arguments)
     ));
 }
+/** @memberof! chat# */
 // called when the client loses its connection
 chat.mq.onConnectionLost = function(responseObject) {
     if (responseObject.errorCode !== 0) {
@@ -178,9 +184,8 @@ chat.mq.send = function(text) {
     }
     if (chat.mq.queue.length != 0) {
         while (chat.mq.queue.length != 0) {
-            var queueMsg = chat.mq.queue.unshift();
-
-                
+            var queueMsg = chat.mq.queue.shift();
+            chat.mq.client.send(queueMsg.mqtt());
         }    
     }
     chat.mq.client.send(msg.mqtt());
@@ -220,15 +225,15 @@ chat.vm.addMessage = function(msg) {
 chat.vm.executeCommand = function (cmd) {
     var cmdParts = cmd.split(' ');
     cmd = cmdParts[0].toLowerCase();
-    if (cmd === '/filter') {
+    if (cmd === '/topic') {
         if (cmdParts.length === 1) {
-            chat.vm.addMessage(new chat.Message('subscribed to filter '+ chat.config.filter));
+            chat.vm.addMessage(new chat.Message('subscribed to topic '+ chat.config.topic));
             return true;
         }
-        chat.mq.client.unsubscribe(chat.config.filter);    
-        chat.config.filter = cmdParts[1];    
-        chat.mq.client.subscribe(chat.config.filter);
-        chat.mq.send('Changed filter to ' + chat.config.filter);
+        chat.mq.client.unsubscribe(chat.config.topic);    
+        chat.config.topic = cmdParts[1];    
+        chat.mq.client.subscribe(chat.config.topic);
+        chat.mq.send('Changed topic to ' + chat.config.topic);
         return true;
     };
     if (cmd === '/clientid') {
@@ -289,11 +294,7 @@ chat.view = function() {
 
 };
 
-//initialize the application
-m.mount(document.getElementById('chatapp'), {
-    controller: chat.controller,
-    view: chat.view
-});
+
 
 // TODO remove hack for debugging
 window.__chat = chat;

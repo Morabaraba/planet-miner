@@ -8,7 +8,6 @@
     <pre>
 &nbsp;
 &nbsp;
-&nbsp;
                                                       .".
                                                      /  |
                                                     /  /
@@ -27,11 +26,19 @@
                                    ( |     /     /
                                     " \_  (__   (__
                                         "-._,)--._,)
-                                        <span id="loading">Loading...</span>
+<div id="loading">Loading...</div>
 </pre>
     <script>
+        var gm;
         var loading = document.getElementById('loading');
-        setInterval(function() {
+        var loadingLoop = setInterval(function() {
+            if ( gm && gm.err) {
+                loading.innerHTML = "Err, Houstan we have a problem. <br>" + 
+                    "To your console please! <br>" +
+                    gm.err;
+                clearInterval(loadingLoop);
+                return;
+            }
             var text = loading.innerText.split('');
             text.push(text[0]);
             text.shift();
@@ -42,13 +49,7 @@
 <div id="game-screen">
     <div id="chatapp"></div>
     <div id=phaser></div>
-    <div class="keys">
-        <img id="btn-fullscreen" src="images/Blank_White_Resize.png"></img>
-        <img id="btn-left" src="images/Keyboard_White_Arrow_Left.png"></img>
-        <img id="btn-right" src="images/Keyboard_White_Arrow_Right.png"></img>
-        <img id="btn-alt" src="images/Keyboard_White_Alt.png"></img>
-        <img id="btn-ctrl" src="images/Keyboard_White_Ctrl.png"></img>
-    </div>
+
 </div>
 
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/phaser/2.5.0/phaser.min.js"></script>
@@ -56,7 +57,9 @@
 <script src="//cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
 <script src="//cdn.jsdelivr.net/lodash/4.13.1/lodash.core.js"></script>
+<script type="text/javascript" src="js/cookies.js"></script>
 <script type="text/javascript" src="js/bert.js"></script>
+<script type="text/javascript" src="js/config.js"></script>
 <script type="text/javascript" src="js/main.js"></script>
 <script type="text/javascript" src="js/game.js"></script>
 <script type="text/javascript" src="js/gm.js"></script>
