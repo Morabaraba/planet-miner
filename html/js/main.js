@@ -51,6 +51,9 @@ chat.Message.prototype.mqtt = function(topic) {
     if (this.msg.type == this.types.ACTION) {
         t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.floor)
     } else 
+    if (this.msg.type == this.types.BREAK) {
+        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.x, this.msg.y)
+    } else 
     {
         console.error('unknown type for mqtt', msg)
         chat.vm.addMessage(new chat.Message('Sending unknown message type', 'msg', true));
@@ -64,7 +67,8 @@ chat.Message.prototype.types = {
     MESSAGE: 'msg',
     MOVE: 'mov',
     CREATE: 'crt',
-    ACTION: 'act'
+    ACTION: 'act',
+    BREAK : 'brk'
 }
 // TODO HACK HACK HHACK
 chat.Message.types  = chat.Message.prototype.types 
@@ -157,6 +161,13 @@ chat.mq.onMessageArrived = function(message) {
         }
         if (msgObj.clientId != chat.config.clientId) {
             gm.actionPlayer(msgObj)
+        }
+    } else 
+    if (msg[0] == chat.Message.types.BREAK) {
+        var tile = map.getTileWorldXY(msg[3], msg[4]);
+        if (tile) {
+            particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+            map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
         }
     } else {
         var textMsg = 'BERT showed up with something unknown.';

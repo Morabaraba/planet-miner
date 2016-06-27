@@ -119,6 +119,12 @@ GameMaster.prototype.actionPlayer = function(msg) {
     particleBurst(player, facing === 'left' ? player.width : 0);
 }
 
+
+GameMaster.prototype.breakTile = function(x, y) {
+    var self = this;
+    chat.mq.send({type: 'brk', x: x, y: y});
+}
+    
 GameMaster.prototype.updatePlayer = function(msg) {
     var self = this;
     if (msg.clientId === self.currentSessionId()) return;

@@ -221,11 +221,13 @@ function update() {
         if (tile) {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+            gm.breakTile(x, player.y + 16)
         }
         var tile = map.getTileWorldXY(x, player.y + 32);
         if (tile) {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+            gm.breakTile(x, player.y + 32)
         }
     }
 
