@@ -286,6 +286,10 @@ function update() {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
             gm.breakTile(x, player.y + 32)
+            
+            gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+            breakCounterText.text  = gm.config.game.breakCounter;
+            docCookies.setItem('breakCounter', gm.config.game.breakCounter);
         }
     }
     
