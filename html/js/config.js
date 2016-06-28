@@ -12,7 +12,8 @@ gm.config = {
             normalSpeed: 200,
             superSpeed: 300
         },
-        level: 'levels/level3-town.json'
+        level: 'levels/level3-town.json',
+        breakCounter: 0 // because deon
     },
     mqtt: {
         useSSL: true, // atleast it is encrypted

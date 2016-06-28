@@ -47,6 +47,7 @@ GameMaster.prototype.saveConfig = function() {
     docCookies.setItem( 'clientId', self.config.chat.clientId);
     docCookies.setItem('nick', self.config.game.player.nick);
     docCookies.setItem('level', self.config.game.level);
+    docCookies.setItem('breakCounter', self.config.game.breakCounter);
 }
 
 GameMaster.prototype.loadConfig = function() {
@@ -54,6 +55,7 @@ GameMaster.prototype.loadConfig = function() {
     self.config.chat.clientId = docCookies.getItem('clientId' ) || self.config.chat.clientId;
     self.config.game.player.nick = docCookies.getItem('nick' ) || self.config.game.player.nick;
     self.config.game.level = docCookies.getItem('level' ) || self.config.game.level;
+    self.config.game.breakCounter = docCookies.getItem('breakCounter' ) || self.config.game.breakCounter;
 }
 
 GameMaster.prototype.actions = {

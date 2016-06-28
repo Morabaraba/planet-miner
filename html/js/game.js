@@ -16,6 +16,8 @@ var actionButton;
 var bg;
 var speed;
 
+var breakCounterText;
+
 var facingJump;
 
 // Keyboard cursors
@@ -69,6 +71,7 @@ function preload() {
     game.load.image("btn-ctrl", "images/Keyboard_White_Ctrl.png");
     game.load.image("btn-shift", "images/Keyboard_White_Shift.png");
     game.load.image("btn-chat", "images/chat-bubble.png");
+    game.load.image("btn-joystick", "images/joystick100.png");
 
 }
 
@@ -148,18 +151,42 @@ function create() {
         x: 0.5,
         y: 0.5
     };
+    
     rightTouch = createButton(game.width - 128, game.height - 120, 'btn-right');
     leftTouch = createButton(game.width - 224, game.height - 120, 'btn-left');
     actionTouch = createButton(32, game.height - 112, 'btn-ctrl');
     jumpTouch = createButton(144, game.height - 112, 'btn-alt');
     breakTouch = createButton(92, game.height - 182, 'btn-shift');
+    
     chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
     chatTouch.width = 34;
     chatTouch.height = 34;
+
+    rightTouch.visible = false;
+    leftTouch.visible = false; 
+    actionTouch.visible = false;
+    jumpTouch.visible = false; 
+    breakTouch.visible = false;
+
+    joystickFunction = function(){
+        rightTouch.visible  = !rightTouch.visible ;
+        leftTouch.visible   = !leftTouch.visible  ; 
+        actionTouch.visible = !actionTouch.visible;
+        jumpTouch.visible   = !jumpTouch.visible  ; 
+        breakTouch.visible  = !breakTouch.visible ;
+    }    
+    joystickTouch = createButton(game.width - 48, 108, 'btn-joystick', joystickFunction);
+    joystickTouch.width = 34;
+    joystickTouch.height = 34;
+    
     emitter = game.add.emitter(0, 0, 1000);
 
     emitter.makeParticles('rock');
     emitter.gravity = 200;
+    
+    var style = { font: "16px Arial", fill: "#ffffff"};
+    breakCounterText = game.add.text(8, 8, gm.config.game.breakCounter, style);
+    breakCounterText.fixedToCamera = true;
 }
 
 
@@ -248,6 +275,11 @@ function update() {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
             gm.breakTile(x, player.y + 16)
+            
+            
+            gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+            breakCounterText.text  = gm.config.game.breakCounter;
+            docCookies.setItem('breakCounter', gm.config.game.breakCounter);
         }
         var tile = map.getTileWorldXY(x, player.y + 32);
         if (tile) {
@@ -256,6 +288,8 @@ function update() {
             gm.breakTile(x, player.y + 32)
         }
     }
+    
+
 
 }
 
@@ -301,7 +335,7 @@ function jumpTouchButton() {
         jumpUp();
     }
 }
-
+/*
 function breakTouchButton() {
     function jumpUp() {
         player.body.velocity.y = -250;
@@ -319,7 +353,7 @@ function breakTouchButton() {
         jumpUp();
     }
 }
-
+*/
 function movePlayerLeft() {
     player.body.velocity.x = -1 * speed;
     if (facing != 'left') {
