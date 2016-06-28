@@ -291,6 +291,32 @@ function update() {
             breakCounterText.text  = gm.config.game.breakCounter;
             docCookies.setItem('breakCounter', gm.config.game.breakCounter);
         }
+        
+        if (jumpButton.isDown ||
+        testTouch(jumpTouch)) {
+            var tile = map.getTileWorldXY(player.x, player.y + 4);
+            if (tile) {
+                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+                gm.breakTile(player.x, player.y + 4);
+                
+                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+                breakCounterText.text  = gm.config.game.breakCounter;
+                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+            }      
+
+            var tile = map.getTileWorldXY(player.x + 16, player.y + 4);
+            if (tile) {
+                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+                gm.breakTile(player.x + 16, player.y + 4);
+                
+                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+                breakCounterText.text  = gm.config.game.breakCounter;
+                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+            } 
+            
+        }
     }
     
 
