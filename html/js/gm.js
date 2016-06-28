@@ -79,6 +79,7 @@ GameMaster.prototype.createPlayer = function(msg) {
     //player.addChild(text);
     // TODO fix hack
     player.text = text;
+    player.opts = msg;
     
     player.animations.add('left', [0, 1, 2, 3], 10, true);
     player.animations.add('turn', [4], 20, true);
@@ -86,6 +87,9 @@ GameMaster.prototype.createPlayer = function(msg) {
     
     self.players[msg.clientId] = player;
     chat.mq.send({type: 'crt'});
+    //if (msg.clientId !== gm.currentSessionId()) return;
+    var message = new chat.Message("has entered " + chat.config.topic + ".");
+    //chat.mq.client.send(message.mqtt());
     return player;
 }
 
@@ -103,6 +107,28 @@ GameMaster.prototype.movePlayer = function(player, opts) {
     msg = _.assignIn(msg, opts);
     chat.mq.send(msg);
 }
+
+GameMaster.prototype.chatPlayer = function(msg) {
+    var self = this;
+    /*
+    if (!msg) {
+        // $@#$ HACK TODO
+        chat.mq.send({type: 'act', });
+        return;
+    }*/
+    var player = self.players[msg.clientId];
+    if (!player) {
+        console.error('no player found', msg);
+        return;
+    }
+    player.text.text = player.opts.clientId + ': ' + msg.text;
+    if (player.timeoutID) window.clearTimeout(player.timeoutID);
+    player.timeoutID = window.setTimeout(function() {
+        player.text.text = player.opts.clientId    
+    }, 15 * 1000 // 15 sec
+    );
+}
+
 
 GameMaster.prototype.actionPlayer = function(msg) {
     var self = this;
@@ -153,6 +179,16 @@ GameMaster.prototype.updatePlayer = function(msg) {
     }
     player.x = msg.x;
     player.y = msg.y;
+}
+
+GameMaster.prototype.showChat = function(show) {
+    if (show) {
+        document.getElementById("chatapp").style.display = "block";
+        document.getElementById("chat-input").focus();
+    } else {
+        document.getElementById("chatapp").style.display = "none";        
+        chat.vm.post();
+    }
 }
 
 GameMaster.prototype.showGameScreen = function(show) {

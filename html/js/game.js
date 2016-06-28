@@ -53,6 +53,7 @@ function preload() {
     game.load.tilemap('level1', level, null, Phaser.Tilemap.TILED_JSON);
 
     game.load.image('tiles-1', 'assets/games/starstruck/tiles-1.png');
+    game.load.image('RPGpack_sheet', 'images/RPGpack_sheet.png');
     game.load.spritesheet('dude', 'assets/games/starstruck/dude.png', 32, 48);
     game.load.spritesheet('droid', 'assets/games/starstruck/droid.png', 32, 32);
     game.load.image('starSmall', 'assets/games/starstruck/star.png');
@@ -67,6 +68,7 @@ function preload() {
     game.load.image("btn-alt", "images/Keyboard_White_Alt.png");
     game.load.image("btn-ctrl", "images/Keyboard_White_Ctrl.png");
     game.load.image("btn-shift", "images/Keyboard_White_Shift.png");
+    game.load.image("btn-chat", "images/chat-bubble.png");
 
 }
 
@@ -81,7 +83,15 @@ function create() {
 
     map = game.add.tilemap('level1');
     map.addTilesetImage('tiles-1');
-    map.setCollisionByExclusion([13, 14, 15, 16, 46, 47, 48, 49, 50, 51]);
+    map.addTilesetImage('RPGpack_sheet');
+    map.setCollisionByExclusion([
+        // Starstruck
+        13, 14, 15, 16, 46, 47, 48, 49, 50, 51,
+        // RPG Pack
+        // crate
+        3317, 3318, 3397, 3398, 3477, 3478,
+        // 
+    ]);
     layer = map.createLayer('Tile Layer 1');
 
     //  Un-comment this on to see the collision tiles
@@ -104,6 +114,20 @@ function create() {
     jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.ALT);
     actionButton = game.input.keyboard.addKey(Phaser.Keyboard.CONTROL);
     breakButton = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
+    enterButton = game.input.keyboard.addKey(Phaser.Keyboard.ENTER)
+    escButton = game.input.keyboard.addKey(Phaser.Keyboard.ESC)
+
+    var chatOpen = false;
+    chatFunction = function(){
+        chatOpen = !chatOpen;
+        gm.showChat(chatOpen);
+    }
+    enterButton.onDown.add(chatFunction, this);
+    escButton.onDown.add(chatFunction, this);
+
+   //  Stop the following keys from propagating up to the browser
+    game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.ALT, Phaser.Keyboard.CONTROL, Phaser.Keyboard.SHIFT  ]);
+    
     //var actionTouch = game.add.tileSprite(game.width - 128 , 128, 96 , 96, 'fullscreen');
     //actionTouch.scale = 0.5;
     function createButton(x, y, z, cb) {
@@ -129,7 +153,9 @@ function create() {
     actionTouch = createButton(32, game.height - 112, 'btn-ctrl');
     jumpTouch = createButton(144, game.height - 112, 'btn-alt');
     breakTouch = createButton(92, game.height - 182, 'btn-shift');
-
+    chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
+    chatTouch.width = 34;
+    chatTouch.height = 34;
     emitter = game.add.emitter(0, 0, 1000);
 
     emitter.makeParticles('rock');

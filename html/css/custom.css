@@ -5,10 +5,7 @@ body {
     color: black;
 }
 
-#chatapp {
-    color: white;
-    position: absolute
-}
+
 
 #loading-screen {
     background: white;
@@ -38,6 +35,10 @@ body {
     color: black;
 }
 
+#chat-textarea {
+    width: 90vw;
+}
+
 #chat-send {
     width: 10vw;
     background: darkgray;
@@ -46,4 +47,13 @@ body {
 #loading {
     text-align: center;
     width: 98vw;
+}
+
+
+
+#chatapp {
+    color: white;
+    position: absolute;
+    font-size: 0.7em;
+    display: none;
 }

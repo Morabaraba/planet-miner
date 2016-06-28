@@ -60,7 +60,7 @@ chat.Message.prototype.mqtt = function(topic) {
         return;
     }
     var message = new Paho.MQTT.Message(Bert.encode(t));
-    message.destinationName = topic || chat.config.topic;
+    message.destinationName = topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
     return message;
 }
 chat.Message.prototype.types = {
@@ -96,10 +96,10 @@ chat.mq.init = function() {
 }
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
-    chat.mq.client.subscribe(chat.config.topic);
-    chat.mq.client.subscribe(chat.config.topic);
-    var message = new chat.Message("has entered " + chat.config.topic + ".");
-    chat.mq.client.send(message.mqtt());
+    chat.mq.client.subscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+    //chat.mq.client.subscribe(chat.config.topic);
+    //var message = new chat.Message("has entered " + chat.config.topic + ".");
+    //chat.mq.client.send(message.mqtt());
     
     
 }
@@ -125,13 +125,17 @@ chat.mq.onMessageArrived = function(message) {
     var msg = Bert.decode(message.payloadString);
     
     if (msg[0] == chat.Message.types.MESSAGE) {
+        if (msg.clientId == gm.currentSessionId()) return;
         //t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), msg.text)
         var msgObj = {
             clientId: msg[1],
             text: msg[3],
             created: moment(msg[2]).format()
         }
+        
         chat.vm.addMessage(new chat.Message(msgObj))
+        gm.chatPlayer(msgObj);
+        gm.showChat(false)
     } else
     if (msg[0] ==  chat.Message.types.MOVE) {
         //t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), msg.x, msg.y, msg.idle)
@@ -288,7 +292,7 @@ chat.view = function() {
                 value: chat.vm.messageText()
             }),
             m("button[id=chat-send][type=submit]", "Send"),
-            m("div", 
+            m("div#chat-textarea", 
                 chat.vm.list.filter(function(msg) {
                     return msg.msg.type === 'msg';
                 })
@@ -296,7 +300,7 @@ chat.view = function() {
                     var text = message.msg.trust ? 
                         m.trust(moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text()) : 
                         moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text();
-                        
+   
                     return m("div.chatline", text);
                 })
             ),
