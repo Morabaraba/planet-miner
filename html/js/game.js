@@ -129,7 +129,7 @@ function create() {
     escButton.onDown.add(chatFunction, this);
 
    //  Stop the following keys from propagating up to the browser
-    game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.ALT, Phaser.Keyboard.CONTROL, Phaser.Keyboard.SHIFT  ]);
+   // game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.ALT, Phaser.Keyboard.CONTROL, Phaser.Keyboard.SHIFT  ]);
     
     //var actionTouch = game.add.tileSprite(game.width - 128 , 128, 96 , 96, 'fullscreen');
     //actionTouch.scale = 0.5;
@@ -147,33 +147,83 @@ function create() {
         //
         return sprite;
     }
-    createButton(game.width - 56, 48, 'btn-fullscreen', goFullscreen).scale = {
+    createButton(game.width - 56, 48, 'btn-fullscreen', gm.goFullscreen).scale = {
         x: 0.5,
         y: 0.5
     };
     
-    rightTouch = createButton(game.width - 128, game.height - 120, 'btn-right');
-    leftTouch = createButton(game.width - 224, game.height - 120, 'btn-left');
-    actionTouch = createButton(32, game.height - 112, 'btn-ctrl');
-    jumpTouch = createButton(144, game.height - 112, 'btn-alt');
-    breakTouch = createButton(92, game.height - 182, 'btn-shift');
+    rightTouch = createButton(game.width - 154, game.height - 128, 'btn-right');
+    rightTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    rightTouch.alpha = 0.3;
+    leftTouch = createButton(game.width - 256, game.height - 128, 'btn-left');
+    leftTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    leftTouch.alpha = 0.3;
     
+    rightJumpTouch = createButton(game.width - 154, game.height - 218, 'btn-right');
+    rightJumpTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    rightJumpTouch.alpha = 0.3;
+    leftJumpTouch = createButton(game.width - 256, game.height - 218, 'btn-left');
+    leftJumpTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    leftJumpTouch.alpha = 0.3;
+    actionTouch = createButton(32, game.height - 128, 'btn-ctrl');
+    actionTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    actionTouch.alpha = 0.3;
+    //jumpTouch = createButton(144, game.height - 112, 'btn-alt');
+    //jumpTouch.scale = {
+    //    x: 1.2,
+    //    y: 1.2
+    //};
+    breakTouch = createButton(144, game.height - 128, 'btn-shift');
+    breakTouch.scale = {
+        x: 1.2,
+        y: 1.2
+    };
+    breakTouch.alpha = 0.3;
+    breakActionTouch = createButton(32, game.height - 208, 'btn-shift');
+    breakActionTouch.scale = {
+        x: 2.4,
+        y: 1.2
+    };
+    breakActionTouch.alpha = 0.3;
     chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
     chatTouch.width = 34;
     chatTouch.height = 34;
 
+if (game.device.desktop) {
     rightTouch.visible = false;
     leftTouch.visible = false; 
     actionTouch.visible = false;
-    jumpTouch.visible = false; 
+    //jumpTouch.visible = false; 
     breakTouch.visible = false;
+    rightJumpTouch.visible = false; 
+    leftJumpTouch.visible = false;
+    breakActionTouch.visible = false;
 
+};
     joystickFunction = function(){
         rightTouch.visible  = !rightTouch.visible ;
         leftTouch.visible   = !leftTouch.visible  ; 
         actionTouch.visible = !actionTouch.visible;
-        jumpTouch.visible   = !jumpTouch.visible  ; 
+        //jumpTouch.visible   = !jumpTouch.visible  ; 
         breakTouch.visible  = !breakTouch.visible ;
+        rightJumpTouch.visible = !rightJumpTouch.visible; 
+        leftJumpTouch.visible = !leftJumpTouch.visible;
+        breakActionTouch.visible = !breakActionTouch.visible;
     }    
     joystickTouch = createButton(game.width - 48, 108, 'btn-joystick', joystickFunction);
     joystickTouch.width = 34;
@@ -185,8 +235,11 @@ function create() {
     emitter.gravity = 200;
     
     var style = { font: "16px Arial", fill: "#ffffff"};
-    breakCounterText = game.add.text(8, 8, gm.config.game.breakCounter, style);
+    breakCounterText = game.add.text(16, 16, gm.config.game.breakCounter, style);
     breakCounterText.fixedToCamera = true;
+    
+    // let the magic begin
+    root.gm.showGameScreen()
 }
 
 
@@ -206,8 +259,10 @@ function update() {
     _.values(gm.players).forEach(function(sprite) {
         game.physics.arcade.collide(sprite, layer);
         //game.physics.arcade.collide(player.text, layer);  
-        sprite.text.x = Math.floor(sprite.x + sprite.width / 2 - (sprite.text.width / 2));
-        sprite.text.y = Math.floor(sprite.y - 10);
+        //sprite.text.x = Math.floor(sprite.x + sprite.width / 2 - (sprite.text.width / 2));
+        //sprite.text.y = Math.floor(sprite.y - 10);
+        sprite.text.x = Math.floor(sprite.x);
+        sprite.text.y = Math.floor(sprite.y);
     })
 
     // TODO fix hack
@@ -216,6 +271,7 @@ function update() {
     player.body.velocity.x = 0;
 
     function testTouch(sprite) {
+        if (!sprite || !sprite.input) return false;
         if (sprite.input.pointerDown(game.input.activePointer.id)) return true;
         var result = false;
         for (var x = 1; x <= game.input.totalActivePointers; x++) {
@@ -226,11 +282,13 @@ function update() {
         return result;
     }
     if (cursors.left.isDown ||
-        testTouch(leftTouch)) {
+        testTouch(leftTouch) ||
+        testTouch(leftJumpTouch)) {
         movePlayerLeft();
     }
     else if (cursors.right.isDown ||
-        testTouch(rightTouch)) {
+        testTouch(rightTouch) ||
+        testTouch(rightJumpTouch)) {
         movePlayerRight();
     }
     else {
@@ -254,18 +312,22 @@ function update() {
     }
 
     if (actionButton.isDown ||
-        testTouch(actionTouch)) {
+        testTouch(actionTouch) ||
+        testTouch(breakActionTouch)
+        ) {
         actionTouchButton();
     }
     else {
         speed = gm.config.game.player.normalSpeed;
     }
     if (jumpButton.isDown ||
-        testTouch(jumpTouch)) {
+        testTouch(jumpTouch) ||
+        testTouch(leftJumpTouch) ||
+        testTouch(rightJumpTouch)) {
         jumpTouchButton();
     }
 
-    if (breakButton.isDown || testTouch(breakTouch)) {
+    if (breakButton.isDown || testTouch(breakTouch) || testTouch(breakActionTouch)) {
         //map.layers[0].data
         var x = facing == 'left' ?
             player.x - 8 :
@@ -293,7 +355,9 @@ function update() {
         }
         
         if (jumpButton.isDown ||
-        testTouch(jumpTouch)) {
+        testTouch(jumpTouch) ||
+        testTouch(leftJumpTouch) ||
+        testTouch(rightJumpTouch)) {
             var tile = map.getTileWorldXY(player.x, player.y + 4);
             if (tile) {
                 particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
@@ -332,20 +396,7 @@ function render() {
 }
 
 
-function goFullscreen() {
-    if (!game.scale) {
-        window.setTimeout(goFullscreen, 500, true);
-        return;
-    }
-    game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
-    game.scale.fullScreenTarget = document.getElementById('game-screen')
-    if (game.scale.isFullScreen) {
-        game.scale.stopFullScreen()
-    }
-    else {
-        game.scale.startFullScreen(false)
-    };
-}
+
 
 
 function jumpTouchButton() {

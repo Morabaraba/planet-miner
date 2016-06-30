@@ -1,14 +1,23 @@
 body {
     margin: 0;
     padding: 0;
-    font-family: "Lucida Console", Monaco, monospace;
-    color: black;
 }
 
-
-
-#loading-screen {
+#loading-screen pre {
     background: white;
+    color: black;
+    font-size: 17px;
+    font-family: "Lucida Console", Monaco, monospace;
+    line-height: 1.2; 
+    margin: 0;
+    padding: 0;
+}
+
+#loading {
+    margin: 0;
+    padding: 0;
+    text-align: center;
+    width: 100vw;
 }
 
 #game-screen {
@@ -17,21 +26,16 @@ body {
 }
 
 
-.keys {
-    margin-top: -16vh;
+#chat-app {
+    color: white;
     position: absolute;
-}
-
-.keys img {
-    width: 8vw;
-}
-
-#btn-fullscreen {
-     margin-left: 2vw;   
+    font-size: 0.7em;
+    display: none;
 }
 
 #chat-input {
-    width: 90vw;
+    width: 50vw;
+    display: inline-block;
     color: black;
 }
 
@@ -44,16 +48,6 @@ body {
     background: darkgray;
 }
 
-#loading {
-    text-align: center;
-    width: 98vw;
-}
 
 
 
-#chatapp {
-    color: white;
-    position: absolute;
-    font-size: 0.7em;
-    display: none;
-}

@@ -1,5 +1,6 @@
 <head>
-    <style>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/ionic/1.3.1/css/ionic.min.css">
+<style>
 div {
     text-align: center;
     width: 100%;
@@ -23,16 +24,55 @@ html {
 }
 body{
     display: table;
+    color: white;
 }
 .blackground {
     background: black;
 }
+
+span.ion-arrow-expand {
+    left: 3px;
+    font-size: 32px;
+    position: absolute;
+}
+
 </style>
 </head>
 <body class="blackground">
-<div>
-  <iframe src="game.html" allowfullscreen></iframe>
-  <script >window.g = window.frames[0];</script>
+<span id="fullscreen" class="ion-arrow-expand" data-pack="default" data-tags="fullscreen"></span>
+<div id="container">                
+    <iframe src="game.html" allowfullscreen="true"  autofocus="true"></iframe>
+    <script>
+        window.onload = function() {
+            var g = window.frames[0];
+            window.g = g;
+            g.onblur = function() {
+                g.focus();
+            }
+            g.focus();
+        
+            
+            var fullscreen = document.getElementById('fullscreen');
+           
+            fullscreen.onclick = function(gmCalled) {
+                var container = document.getElementById('container');
+                if (fullscreen.onclick.isFullScreen) {
+                    document.body.style.width = '100%';
+                    document.body.style.height = '100%';
+                    fullscreen.style.fontSize = '32px';
+                } else {
+                    document.body.style.width = '0';
+                    document.body.style.height = '0';
+                    fullscreen.style.fontSize = '16px';
+                    if (gmCalled === true) { } // do nothing  
+                    else g.gm.goFullscreen();   
+                };
+                fullscreen.onclick.isFullScreen =  !fullscreen.onclick.isFullScreen;
+            };
+            fullscreen.onclick.isFullScreen = false;
+            g.gm.goFullscreen.goSubFullscreen = fullscreen.onclick;
+        }
+    </script>
 </div>
 
 

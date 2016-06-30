@@ -1,18 +1,21 @@
 /* global docCookies */
 var root = this;
 
-// Up until now GameMaster was a object now we promote it to a function.
-// But let us store the current config objecr
+// source our config object gm or create it.
 var GameMasterConfig = gm || {};
 var GameMaster = function(GameMasterConfig) {
     var self = this;
     // yes the names seems strange
     self.config = GameMasterConfig.config;
+    // let us go eat our cookies in the browser
     self.loadConfig();
+    // TODO start our simulation
     self.sim = new Sim();
+    // Well who is playing with you and who do you trust?
     self.players = [];
     try { //initialize the application
-        m.mount(document.getElementById('chatapp'), {
+        // 
+        m.mount(document.getElementById('chat-app'), {
             controller: chat.controller,
             view: chat.view
         });
@@ -76,8 +79,10 @@ GameMaster.prototype.createPlayer = function(msg) {
     
     var player = game.add.sprite(32, 32, 'dude');
     
-    var style = { font: "16px Arial", fill: "#ffffff"};
+    var style = { font: "16px Arial", fill: "#ffffff", width: "480px", wordWrap: true, height: "230px"};
     var text = game.add.text(0, 0, msg.clientId, style);
+    //text.anchor.x = 0.5;
+    text.anchor.y = 1;
     //player.addChild(text);
     // TODO fix hack
     player.text = text;
@@ -89,9 +94,6 @@ GameMaster.prototype.createPlayer = function(msg) {
     
     self.players[msg.clientId] = player;
     chat.mq.send({type: 'crt'});
-    //if (msg.clientId !== gm.currentSessionId()) return;
-    var message = new chat.Message("has entered " + chat.config.topic + ".");
-    //chat.mq.client.send(message.mqtt());
     return player;
 }
 
@@ -112,17 +114,13 @@ GameMaster.prototype.movePlayer = function(player, opts) {
 
 GameMaster.prototype.chatPlayer = function(msg) {
     var self = this;
-    /*
-    if (!msg) {
-        // $@#$ HACK TODO
-        chat.mq.send({type: 'act', });
-        return;
-    }*/
     var player = self.players[msg.clientId];
     if (!player) {
         console.error('no player found', msg);
         return;
     }
+    //if (msg.text.length > 256)
+    //    substring
     player.text.text = player.opts.clientId + ': ' + msg.text;
     if (player.timeoutID) window.clearTimeout(player.timeoutID);
     player.timeoutID = window.setTimeout(function() {
@@ -159,6 +157,8 @@ GameMaster.prototype.updatePlayer = function(msg) {
     var player = self.players[msg.clientId];
     if (!player) {
         console.error('no player found', msg);
+        // let us create a player;
+        gm.createPlayer(msg);
         return;
     }
     if (msg.idle) {
@@ -185,10 +185,10 @@ GameMaster.prototype.updatePlayer = function(msg) {
 
 GameMaster.prototype.showChat = function(show) {
     if (show) {
-        document.getElementById("chatapp").style.display = "block";
+        document.getElementById("chat-app").style.display = "block";
         document.getElementById("chat-input").focus();
     } else {
-        document.getElementById("chatapp").style.display = "none";        
+        document.getElementById("chat-app").style.display = "none";        
         chat.vm.post();
     }
 }
@@ -204,6 +204,27 @@ GameMaster.prototype.showGameScreen = function(show) {
         document.getElementById("loading-screen").style.display = "block";
         document.getElementById("game-screen").style.display = "none";        
     }
+}
+
+GameMaster.prototype.goFullscreen = function() {
+    var game = gm.game;
+    if (!game.scale) {
+        window.setTimeout(this.goFullscreen, 500, true);
+        return;
+    }
+    game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+    game.scale.fullScreenTarget = document.getElementById('game-screen')
+    if (game.scale.isFullScreen) {
+        game.scale.stopFullScreen()
+        gm.goFullscreen.goSubFullscreen.isFullScreen = true;
+        gm.goFullscreen.goSubFullscreen(true);
+    }
+    else {
+        game.scale.startFullScreen(false)
+        gm.goFullscreen.goSubFullscreen.isFullScreen = false;
+        gm.goFullscreen.goSubFullscreen(true);
+    };
+    
 }
 
 function Sim() {
@@ -243,5 +264,4 @@ if (typeof module !== 'undefined' && module.exports) {
 } else {
     root.gm = new GameMaster(GameMasterConfig);
     root.gm.game = startGame(); 
-    root.gm.showGameScreen()
 }
