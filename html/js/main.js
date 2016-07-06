@@ -120,7 +120,18 @@ chat.mq.onConnectionLost = function(responseObject) {
         chat.mq.client.connect(_.clone(chat.config.connectOptions));
     }
 }
+chat.mq.mps = 0;
+_mps_timer = 0
+resetInterval = undefined;
 chat.mq.onMessageArrived = function(message) {
+    chat.mq.mps = chat.mq.mps + 1;
+    if (_mps_timer < Date.now() ) {
+        if (resetInterval) clearTimeout(resetInterval);
+        chat.mq.mps = 0
+        _mps_timer = Date.now() + 1000;
+        resetInterval = setTimeout(function() { chat.mq.mps = 0; }, 1100);
+    }
+    
     //console.debug('onMessageArrived', arguments);
     var msg = Bert.decode(message.payloadString);
     
@@ -212,15 +223,25 @@ chat.vm.init = function() {
     this.messageText = m.prop("");
     this.post = function() {
         try {
-                if (this.messageText()) {
+                if (this.messageText() && this.messageText().trim() !== '') {
                     var text = this.messageText();
                     if (text[0] == '/') {
                         if (chat.vm.executeCommand(text)) {
-                            this.messageText("");    
+                            m.startComputation();
+                            this.messageText("");   
+                            m.endComputation();
+                            return;
                         }
                     } else {
                         chat.mq.send(this.messageText());
+                        m.startComputation();
                         this.messageText("");
+                        m.endComputation();    
+                        gm.hideChat();
+                    }
+                } else {
+                    if (this.messageText().trim() === '') {
+                        gm.hideChat();    
                     }
                 }
         }
@@ -251,6 +272,75 @@ chat.vm.executeCommand = function (cmd) {
         chat.mq.send('Changed topic to ' + chat.config.topic);
         return true;
     };
+
+    if (cmd === '/?' || cmd === '/help') {
+        var msg;
+        if (gm.game.device.desktop) {
+            msg = 'Move around with the arrow keys and use [ctrl] for run [alt] for jump and [shift] to break.';
+        }
+        else {
+            msg = 'Tap the joystick icon on your right to see the on-screen touchpad.';
+        }
+            
+        msg +='<br>You can also execute the following commands: <br>' + 
+            '<li> /level level1 - Loads a level. level1 to level5.</li>' +
+            '<li> /config - Print and set config.</li>' +
+            '<li> /msg [type] [message] - Construct a network message.</li>' +
+            '<li> /repl [eval statement] - JS eval for people who like to type /repl, instead of using the console.</li>' +
+            '<li> /clientid [new client id] - Change your name.</li>' +
+            '<li> /clear - Remove all previous chat and command messages.</li>' +
+            '<li> /version - Print the version number.</li>' +
+            '';//'<li> /topic [topic key] - listen to another topic key.</li>';
+            
+        chat.vm.addMessage(new chat.Message(msg));
+        return true;
+    };
+
+    if (cmd === '/clear') {
+        chat.vm.list.length = 0;
+        return true;
+    }
+    
+    if (cmd === '/version') {
+        var msg = gm.config.game.version; 
+        chat.vm.addMessage(new chat.Message(msg));
+        return true;
+    }
+    
+    if (cmd === '/level') {
+        if (cmdParts.length === 1) {
+            //var msg = JSON.stringify(gm.config);
+            //chat.vm.addMessage(new chat.Message(msg));
+            //console.log('/level "levels/level1.json');
+            return true;
+        }
+        chat.mq.client.unsubscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        gm.config.game.level = 'levels/' + (cmdParts.slice(1).join(' ')) + '.json';
+        chat.mq.client.subscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        createMap({load: true});
+        return true;
+    };
+    
+    if (cmd === '/repl') {
+        if (cmdParts.length === 1) {
+            //var msg = JSON.stringify(gm.config);
+            //chat.vm.addMessage(new chat.Message(msg));
+            console.log('/repl <eval statement>');
+            return true;
+        }
+        eval(cmdParts.slice(1).join(' '));
+        return true;
+    };
+    
+    if (cmd === '/config') {
+        if (cmdParts.length === 1) {
+            var msg = JSON.stringify(gm.config);
+            chat.vm.addMessage(new chat.Message(msg));
+            return true;
+        }
+        return true;
+    };
+    
     if (cmd === '/clientid') {
         if (cmdParts.length === 1) {
             chat.vm.addMessage(new chat.Message('is your clientid.'));
@@ -284,25 +374,32 @@ chat.controller = function() {
 
 chat.view = function() {
     return m('div', [
-        m("form", {
-            onsubmit: chat.vm.post
+        m("div" /*"form"*/, {
+            //onsubmit: chat.vm.post
         }, [
-            m("input[id=chat-input][type=text][placeholder=Enter message...]", {
+            m("input.chat-input[type=text][placeholder=Enter a message to send or /? for help...]", {
                 oninput: m.withAttr("value", chat.vm.messageText),
-                value: chat.vm.messageText()
+                value: chat.vm.messageText(),
+                onkeydown: function(event) {
+                    if (event.keyCode == 13) {
+                        chat.vm.post();
+                    }
+                }
             }),
-            m("button[id=chat-send][type=submit]", "Send"),
-            m("div#chat-textarea", 
-                chat.vm.list.filter(function(msg) {
-                    return msg.msg.type === 'msg';
-                })
-                .map(function(message) {
-                    var text = message.msg.trust ? 
-                        m.trust(moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text()) : 
-                        moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text();
-   
-                    return m("div.chatline", text);
-                })
+            //m("button[id=chat-send][type=submit]", "Send"),
+            m("pre", [
+                m("code#chat-textarea", 
+                    chat.vm.list.filter(function(msg) {
+                        return msg.msg.type === 'msg';
+                    })
+                    .map(function(message) {
+                        var text = message.msg.trust ? 
+                            m.trust(moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text()) : 
+                            moment(message.msg.created).format('LTS') + ' '  + message.msg.clientId + ' ' + message.text();
+       
+                        return m("div.chatline", text);
+                    })
+                )]
             ),
         ])
     ]);

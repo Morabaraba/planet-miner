@@ -4,6 +4,8 @@ body {
 }
 
 #loading-screen pre {
+    position: absolute;
+    left: 25vw;
     background: white;
     color: black;
     font-size: 17px;
@@ -17,8 +19,8 @@ body {
     margin: 0;
     padding: 0;
     text-align: center;
-    width: 100vw;
 }
+
 
 #game-screen {
     display: none;
@@ -33,14 +35,19 @@ body {
     display: none;
 }
 
-#chat-input {
+.chat-input {
     width: 50vw;
     display: inline-block;
     color: black;
 }
 
 #chat-textarea {
-    width: 90vw;
+    /*width: 50vw;
+    */
+    background: rgba(255,255,224,0.7); 
+    font-weight: bold;
+    color: black;
+    padding-left: 4px;
 }
 
 #chat-send {

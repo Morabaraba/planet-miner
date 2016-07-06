@@ -2,6 +2,7 @@ var gm = gm || {};
 var nick =  "Anon" + Math.trunc(Math.random() * 1000);
 gm.config = {
     game: {
+        version: "20160704",
         width: 848,
         height: 480,
         physicsSystem: Phaser.Physics.ARCADE,
@@ -12,7 +13,7 @@ gm.config = {
             normalSpeed: 200,
             superSpeed: 300
         },
-        level: 'levels/level3-town.json',
+        level: 'levels/level2.json',
         breakCounter: 0 // because deon
     },
     mqtt: {

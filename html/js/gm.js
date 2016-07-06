@@ -4,17 +4,21 @@ var root = this;
 // source our config object gm or create it.
 var GameMasterConfig = gm || {};
 var GameMaster = function(GameMasterConfig) {
-    var self = this;
-    // yes the names seems strange
-    self.config = GameMasterConfig.config;
-    // let us go eat our cookies in the browser
-    self.loadConfig();
-    // TODO start our simulation
-    self.sim = new Sim();
-    // Well who is playing with you and who do you trust?
-    self.players = [];
     try { //initialize the application
-        // 
+        var self = this;
+        // yes the names seems strange
+        self.config = GameMasterConfig.config;
+        // let us go eat our cookies in the browser
+        self.loadConfig();
+        // TODO start our simulation
+        self.sim = new Sim();
+        // Well who is playing with you and who do you trust?
+        self.players = {};
+        var level = window.location.search.substring(1) || window.top.location.search.substring(1);
+        if (level !== '') {
+            gm.config.game.level = level;
+        }
+        
         m.mount(document.getElementById('chat-app'), {
             controller: chat.controller,
             view: chat.view
@@ -117,6 +121,7 @@ GameMaster.prototype.chatPlayer = function(msg) {
     var player = self.players[msg.clientId];
     if (!player) {
         console.error('no player found', msg);
+        gm.createPlayer(msg);
         return;
     }
     //if (msg.text.length > 256)
@@ -140,6 +145,7 @@ GameMaster.prototype.actionPlayer = function(msg) {
     var player = self.players[msg.clientId];
     if (!player) {
         console.error('no player found', msg);
+        self.createPlayer(msg)
         return;
     }
     particleBurst(player, facing === 'left' ? player.width : 0);
@@ -183,13 +189,17 @@ GameMaster.prototype.updatePlayer = function(msg) {
     player.y = msg.y;
 }
 
+
+GameMaster.prototype.hideChat = function() {
+    document.getElementById("chat-app").style.display = "none";        
+};
+
 GameMaster.prototype.showChat = function(show) {
     if (show) {
         document.getElementById("chat-app").style.display = "block";
-        document.getElementById("chat-input").focus();
+        document.getElementsByClassName("chat-input")[0].focus();
     } else {
-        document.getElementById("chat-app").style.display = "none";        
-        chat.vm.post();
+        //chat.vm.post();
     }
 }
 
