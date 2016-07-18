@@ -273,6 +273,10 @@ chat.vm.executeCommand = function (cmd) {
         return true;
     };
 
+    if (cmd === '/debug' || cmd === '/debug') {
+        gm.config.game.debug != gm.config.game.debug;
+        return true;
+    }
     if (cmd === '/?' || cmd === '/help') {
         var msg;
         if (gm.game.device.desktop) {

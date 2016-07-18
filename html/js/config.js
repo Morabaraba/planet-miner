@@ -3,6 +3,7 @@ var nick =  "Anon" + Math.trunc(Math.random() * 1000);
 gm.config = {
     game: {
         version: "20160704",
+        debug: false,
         width: 848,
         height: 480,
         physicsSystem: Phaser.Physics.ARCADE,

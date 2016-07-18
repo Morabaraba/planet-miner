@@ -27,6 +27,9 @@ var rightTouch;
 var leftTouch;
 var actionTouch;
 var jumpTouch;
+var pad;
+var stick;
+
 
 var emitter;
 
@@ -69,6 +72,8 @@ function preload() {
     game.load.image("btn-joystick", "images/joystick100.png");
 
     game.load.spritesheet('waters', 'assets/sprites/waters.png', 32, 400, 32);
+    
+    game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
 }
 
 function createMap(opt) {
@@ -321,6 +326,12 @@ function create() {
     
     // let the magic begin
     game.world.setChildIndex(ui, game.world.children.length - 1);
+    
+    
+    pad = game.plugins.add(Phaser.VirtualJoystick);
+    
+    stick = pad.addStick(0, 0, 200, 'arcade');
+    stick.showOnTouch = true;
 }
 
 
@@ -500,9 +511,11 @@ function update() {
 }
 
 function render() {
-    //game.debug.text(game.time.physicsElapsed, 32, 32);
-    //game.debug.body(player);
-    //game.debug.bodyInfo(player, 16, 24);
+    if(gm.config.game.debug) {
+        game.debug.text(game.time.physicsElapsed, 16, 248);
+        game.debug.body(player);
+        game.debug.bodyInfo(player, 16, 264);
+    }
 }
 
 function jumpTouchButton() {
