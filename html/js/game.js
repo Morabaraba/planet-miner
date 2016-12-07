@@ -346,6 +346,18 @@ function actionTouchButton() {
     }
 }
 
+function stickLeft() {
+    return stick.isDown &&
+        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
+        stick.x < 0; 
+}
+
+function stickRight() {
+    return stick.isDown &&
+        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
+        stick.x > 0; 
+}
+
 function testTouch(sprite) {
     if (!sprite || !sprite.input) return false;
     if (sprite.input.pointerDown(game.input.activePointer.id)) return true;
@@ -372,12 +384,12 @@ function update() {
 
     player.body.velocity.x = 0;
 
-    if (cursors.left.isDown ||
+    if (stickLeft() || cursors.left.isDown ||
         testTouch(leftTouch) ||
         testTouch(leftJumpTouch)) {
         movePlayerLeft();
     }
-    else if (cursors.right.isDown ||
+    else if (stickRight() || cursors.right.isDown ||
         testTouch(rightTouch) ||
         testTouch(rightJumpTouch)) {
         movePlayerRight();

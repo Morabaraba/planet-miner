@@ -1,5 +1,11 @@
 var gm = gm || {};
-var nick =  "Anon" + Math.trunc(Math.random() * 1000);
+var nick =  "clientId-Anon" + Math.trunc(Math.random() * 1000);
+var mqtt = {
+        useSSL: false, // atleast it is encrypted
+        //userName: 'anon', // I know this is insecure
+        //password: 'pleasebegentle',
+        keepAliveInterval: 30 // check every 30 sec if we are still allive
+    }
 gm.config = {
     game: {
         version: "20160704",
@@ -17,18 +23,13 @@ gm.config = {
         level: 'levels/level2.json',
         breakCounter: 0 // because deon
     },
-    mqtt: {
-        useSSL: true, // atleast it is encrypted
-        userName: 'anon', // I know this is insecure
-        password: 'pleasebegentle',
-        keepAliveInterval: 30 // check every 30 sec if we are still allive
-    },
+    mqtt: mqtt,
     chat: {
-        hostname: 'haasdas-morabaraba.c9users.io',
-        port: 443,
-        path: '/ws',
+        hostname: 'broker.hivemq.com',
+        port: 8000,
+        path: '/mqtt',
         clientId: nick,
-        connectOptions: gm.mqtt,
+        connectOptions: mqtt,
         topic: 'lobby.beta'
     },
 

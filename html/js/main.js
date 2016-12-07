@@ -38,6 +38,16 @@ chat.Message.prototype.sessionId = function() {
 }
 // convert a Message to a Paho Mqtt message
 chat.Message.prototype.mqtt = function(topic) {
+    console.log(this.msg);
+    var encodedData = msgpack.encode(this.msg);
+    console.log(encodedData);
+    var message = new Paho.MQTT.Message(encodedData);
+    message.destinationName = topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
+    console.log(message.payloadBytes);
+    return message;    
+};
+/*
+chat.Message.prototype.mqtt = function(topic) {
     var t;
     if (this.msg.type == this.types.MESSAGE) {
         t = Bert.tuple(this.msg.type, this.sessionId()  , Date.now(), this.msg.text)
@@ -59,10 +69,16 @@ chat.Message.prototype.mqtt = function(topic) {
         chat.vm.addMessage(new chat.Message('Sending unknown message type', 'msg', true));
         return;
     }
-    var message = new Paho.MQTT.Message(Bert.encode(t));
+    var berty = Bert.encode(t);
+    debugger
+    window.berty = berty;
+    console.log(Bert.pp_bytes(berty))
+    var message = new Paho.MQTT.Message(berty);
     message.destinationName = topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
+    console.log(message.payloadBytes);
     return message;
 }
+*/
 chat.Message.prototype.types = {
     MESSAGE: 'msg',
     MOVE: 'mov',
@@ -90,6 +106,7 @@ chat.mq.init = function() {
     /* hook up our chat onConnect and onFailure functions to our mqtt connection options */
     gm.config.mqtt.onSuccess = chat.mq.onConnect;
     gm.config.mqtt.onFailure = chat.mq.onFailure;
+    debugger;
     gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
     // we shallow clone our connectOptions so that if we reconnect we don't inherit previous connection information.
     this.client.connect(_.clone(gm.config.mqtt));
