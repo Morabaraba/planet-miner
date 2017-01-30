@@ -40,10 +40,10 @@ chat.Message.prototype.sessionId = function() {
 chat.Message.prototype.mqtt = function(topic) {
     console.log(this.msg);
     var encodedData = msgpack.encode(this.msg);
-    console.log(encodedData);
+    //console.log(encodedData);
     var message = new Paho.MQTT.Message(encodedData);
-    message.destinationName = topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
-    console.log(message.payloadBytes);
+    message.destinationName = chat.config.topic //topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
+    //console.log(message.payloadBytes);
     return message;    
 };
 /*
@@ -106,15 +106,17 @@ chat.mq.init = function() {
     /* hook up our chat onConnect and onFailure functions to our mqtt connection options */
     gm.config.mqtt.onSuccess = chat.mq.onConnect;
     gm.config.mqtt.onFailure = chat.mq.onFailure;
-    debugger;
-    gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
+    // debugger;
+    //gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
     // we shallow clone our connectOptions so that if we reconnect we don't inherit previous connection information.
     this.client.connect(_.clone(gm.config.mqtt));
 }
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
-    chat.mq.client.subscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
-    //chat.mq.client.subscribe(chat.config.topic);
+    //var topic = chat.config.topic + '.' +  gm.config.game.level.split('/')[1];
+    //console.log('on Connect, topic', topic)
+    //chat.mq.client.subscribe(topic);
+    chat.mq.client.subscribe(chat.config.topic);
     //var message = new chat.Message("has entered " + chat.config.topic + ".");
     //chat.mq.client.send(message.mqtt());
     
@@ -149,60 +151,37 @@ chat.mq.onMessageArrived = function(message) {
         resetInterval = setTimeout(function() { chat.mq.mps = 0; }, 1100);
     }
     
-    //console.debug('onMessageArrived', arguments);
-    var msg = Bert.decode(message.payloadString);
+    var msg = msgpack.decode(message.payloadBytes)
     
-    if (msg[0] == chat.Message.types.MESSAGE) {
+    if (msg.type == chat.Message.types.MESSAGE) {
         if (msg.clientId == gm.currentSessionId()) return;
-        //t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), msg.text)
-        var msgObj = {
-            clientId: msg[1],
-            text: msg[3],
-            created: moment(msg[2]).format()
-        }
         
-        chat.vm.addMessage(new chat.Message(msgObj))
+        chat.vm.addMessage(new chat.Message(msg))
         gm.chatPlayer(msgObj);
         gm.showChat(false)
     } else
-    if (msg[0] ==  chat.Message.types.MOVE) {
-        //t = Bert.tuple(this.msg.type, chat.config.clientId, Date.now(), msg.x, msg.y, msg.idle)
-        var msgObj = {
-            clientId: msg[1],
-            msg: msg[3],
-            created: moment(msg[2]).format(),
-            x:  msg[3],
-            y:  msg[4],
-            idle:  msg[5]
-        }
-        gm.updatePlayer(msgObj);
+    if (msg.type ==  chat.Message.types.MOVE) {
+        gm.updatePlayer(msg);
     } else
-    if (msg[0] == chat.Message.types.CREATE) {
-        var msgObj = {
-            clientId: msg[1],
-            created: moment(msg[2]).format(),
-        }
-        if (msgObj.clientId != chat.config.clientId) {
-            gm.createPlayer(msgObj)
+    if (msg.type == chat.Message.types.CREATE) {
+        if (msg.clientId != chat.config.clientId) {
+            gm.createPlayer(msg)
         }
     } else 
-    if (msg[0] == chat.Message.types.ACTION) {
-        var msgObj = {
-            clientId: msg[1],
-            created: moment(msg[2]).format(),
-        }
+    if (msg.type == chat.Message.types.ACTION) {
+        var msgObj = msg;
         if (msgObj.clientId != chat.config.clientId) {
             gm.actionPlayer(msgObj)
         }
     } else 
-    if (msg[0] == chat.Message.types.BREAK) {
-        var tile = map.getTileWorldXY(msg[3], msg[4]);
+    if (msg.type == chat.Message.types.BREAK) {
+        var tile = map.getTileWorldXY(msg.x, msg.y);
         if (tile) {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
         }
     } else {
-        var textMsg = 'BERT showed up with something unknown.';
+        var textMsg = 'Something unknown is happening.';
         console.error(textMsg + ' Unknown message type received.', msg)
         chat.vm.addMessage(new chat.Message(textMsg, 'msg', true));
     }
@@ -359,6 +338,11 @@ chat.vm.executeCommand = function (cmd) {
             chat.vm.addMessage(new chat.Message(msg));
             return true;
         }
+        return true;
+    };
+
+    if (cmd === '/reconnect') {
+        chat.mq.client.connect(_.clone(gm.config.mqtt));
         return true;
     };
     

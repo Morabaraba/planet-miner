@@ -25,12 +25,12 @@ gm.config = {
     },
     mqtt: mqtt,
     chat: {
-        hostname: 'broker.hivemq.com',
+        hostname: 'broker.mqttdashboard.com',
         port: 8000,
         path: '/mqtt',
         clientId: nick,
         connectOptions: mqtt,
-        topic: 'lobby.beta'
+        topic: 'actionspaceminer'
     },
 
 }

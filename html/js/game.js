@@ -29,8 +29,9 @@ var actionTouch;
 var jumpTouch;
 var pad;
 var stick;
-
-
+var water;
+var music;
+var crumblingSound;
 var emitter;
 
 function startGame() {
@@ -63,17 +64,22 @@ function preload() {
     game.load.image('rock', 'images/rock.png');
 
     game.load.image("btn-fullscreen", "images/Blank_White_Resize.png");
-    game.load.image("btn-left", "images/Keyboard_White_Arrow_Left.png");
-    game.load.image("btn-right", "images/Keyboard_White_Arrow_Right.png");
-    game.load.image("btn-alt", "images/Keyboard_White_Alt.png");
-    game.load.image("btn-ctrl", "images/Keyboard_White_Ctrl.png");
-    game.load.image("btn-shift", "images/Keyboard_White_Shift.png");
+    //game.load.image("btn-left", "images/Keyboard_White_Arrow_Left.png");
+    //game.load.image("btn-right", "images/Keyboard_White_Arrow_Right.png");
+    //game.load.image("btn-alt", "images/Keyboard_White_Alt.png");
+    //game.load.image("btn-ctrl", "images/Keyboard_White_Ctrl.png");
+    //game.load.image("btn-shift", "images/Keyboard_White_Shift.png");
     game.load.image("btn-chat", "images/chat-bubble.png");
     game.load.image("btn-joystick", "images/joystick100.png");
+    game.load.image("btn-a", "images/shadedLight36.png");
+    game.load.image("btn-b", "images/shadedLight37.png");    
 
     game.load.spritesheet('waters', 'assets/sprites/waters.png', 32, 400, 32);
     
     game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
+    
+    game.load.audio('crumbling', ['sound/Crumbling.mp3']);
+    game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
 }
 
 function createMap(opt) {
@@ -114,7 +120,7 @@ function createMap(opt) {
             layer = map.createLayer('Tile Layer 1');
             layer.resizeWorld();
             game.world.setChildIndex(layer, 1)
-            water.y = game.world.height - 128;           
+                      
             levelText.text = gm.config.game.level;
             root.gm.showGameScreen()
             game.paused = false;
@@ -139,6 +145,30 @@ function createMap(opt) {
     }
 }
 
+
+function createWater() {
+    water = game.add.tileSprite(0, game.world.height - 128, 128 * 16, 24 * 16, 'waters');
+    water.alpha = 0.5;
+
+    // water = game.add.sprite(0, 0, 'waters');
+
+    water.animations.add('waves0', [0, 1, 2, 3, 2, 1]);
+    water.animations.add('waves1', [4, 5, 6, 7, 6, 5]);
+    water.animations.add('waves2', [8, 9, 10, 11, 10, 9]);
+    water.animations.add('waves3', [12, 13, 14, 15, 14, 13]);
+    water.animations.add('waves4', [16, 17, 18, 19, 18, 17]);
+    water.animations.add('waves5', [20, 21, 22, 23, 22, 21]);
+    water.animations.add('waves6', [24, 25, 26, 27, 26, 25]);
+    water.animations.add('waves7', [28, 29, 30, 31, 30, 29]);
+
+    // change to animation num
+    var n = 7;
+    water.animations.play('waves' + n, 8, true);
+    game.physics.enable(water, Phaser.Physics.ARCADE);
+    water.body.collideWorldBounds = true;
+    water.body.immovable = true;
+    water.body.allowGravity = false;
+}
 function create() {
     game.stage.disableVisibilityChange = true;
     
@@ -163,10 +193,11 @@ function create() {
     levelText = game.add.text(16, 32, gm.config.game.level, style);
     levelText.fixedToCamera = true;
     
-    
     mpsText = game.add.text(16, 48, '0', style);
     mpsText.fixedToCamera = true;
     
+    createJoystick();
+    createWater();
     createMap({load: true});
     
     player = gm.createPlayer();
@@ -179,9 +210,9 @@ function create() {
     game.camera.follow(player);
 
     cursors = game.input.keyboard.createCursorKeys();
-    jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.ALT);
-    actionButton = game.input.keyboard.addKey(Phaser.Keyboard.CONTROL);
-    breakButton = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
+    jumpButton = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+    actionButton = game.input.keyboard.addKey(Phaser.Keyboard.Z);
+    breakButton = game.input.keyboard.addKey(Phaser.Keyboard.X);
     enterButton = game.input.keyboard.addKey(Phaser.Keyboard.ENTER)
     escButton = game.input.keyboard.addKey(Phaser.Keyboard.ESC)
 
@@ -217,33 +248,10 @@ function create() {
         x: 0.5,
         y: 0.5
     };
-    
-    rightTouch = createButton(game.width - 154, game.height - 128, 'btn-right');
-    rightTouch.scale = {
-        x: 1.2,
-        y: 1.2
-    };
-    rightTouch.alpha = 0.3;
-    leftTouch = createButton(game.width - 256, game.height - 128, 'btn-left');
-    leftTouch.scale = {
-        x: 1.2,
-        y: 1.2
-    };
-    leftTouch.alpha = 0.3;
-    
-    rightJumpTouch = createButton(game.width - 154, game.height - 218, 'btn-right');
-    rightJumpTouch.scale = {
-        x: 1.2,
-        y: 1.2
-    };
-    rightJumpTouch.alpha = 0.3;
-    leftJumpTouch = createButton(game.width - 256, game.height - 218, 'btn-left');
-    leftJumpTouch.scale = {
-        x: 1.2,
-        y: 1.2
-    };
-    leftJumpTouch.alpha = 0.3;
-    actionTouch = createButton(32, game.height - 128, 'btn-ctrl');
+
+    game.width - 154
+    game.width - 256
+    actionTouch = createButton(game.width - 154, game.height - 148, 'btn-b');
     actionTouch.scale = {
         x: 1.2,
         y: 1.2
@@ -254,42 +262,43 @@ function create() {
     //    x: 1.2,
     //    y: 1.2
     //};
-    breakTouch = createButton(144, game.height - 128, 'btn-shift');
+    breakTouch = createButton(game.width - 300, game.height - 148, 'btn-a');
     breakTouch.scale = {
         x: 1.2,
         y: 1.2
     };
     breakTouch.alpha = 0.3;
-    breakActionTouch = createButton(32, game.height - 208, 'btn-shift');
+   /* breakActionTouch = createButton(game.width - 256, game.height - 208, 'btn-shift');
     breakActionTouch.scale = {
         x: 2.4,
         y: 1.2
     };
-    breakActionTouch.alpha = 0.3;
+    breakActionTouch.alpha = 0.3;*/
+    
     chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
     chatTouch.width = 34;
     chatTouch.height = 34;
 
     if (game.device.desktop) {
-        rightTouch.visible = false;
-        leftTouch.visible = false; 
+        //rightTouch.visible = false;
+        //leftTouch.visible = false; 
         actionTouch.visible = false;
         //jumpTouch.visible = false; 
         breakTouch.visible = false;
-        rightJumpTouch.visible = false; 
-        leftJumpTouch.visible = false;
-        breakActionTouch.visible = false;
+        //rightJumpTouch.visible = false; 
+        //leftJumpTouch.visible = false;
+        //breakActionTouch.visible = false;
     
     };
     joystickFunction = function(){
-        rightTouch.visible  = !rightTouch.visible ;
-        leftTouch.visible   = !leftTouch.visible  ; 
+        //rightTouch.visible  = !rightTouch.visible ;
+        //leftTouch.visible   = !leftTouch.visible  ; 
         actionTouch.visible = !actionTouch.visible;
         //jumpTouch.visible   = !jumpTouch.visible  ; 
         breakTouch.visible  = !breakTouch.visible ;
-        rightJumpTouch.visible = !rightJumpTouch.visible; 
-        leftJumpTouch.visible = !leftJumpTouch.visible;
-        breakActionTouch.visible = !breakActionTouch.visible;
+        //rightJumpTouch.visible = !rightJumpTouch.visible; 
+        //leftJumpTouch.visible = !leftJumpTouch.visible;
+        //breakActionTouch.visible = !breakActionTouch.visible;
     }    
     joystickTouch = createButton(game.width - 48, 108, 'btn-joystick', joystickFunction);
     joystickTouch.width = 34;
@@ -300,40 +309,34 @@ function create() {
     emitter.makeParticles('rock');
     emitter.gravity = 200;
     
-
-    
-    water = game.add.tileSprite(0, game.world.height - 128, 128 * 16, 24 * 16, 'waters');
-    water.alpha = 0.5;
-
-    // water = game.add.sprite(0, 0, 'waters');
-
-    water.animations.add('waves0', [0, 1, 2, 3, 2, 1]);
-    water.animations.add('waves1', [4, 5, 6, 7, 6, 5]);
-    water.animations.add('waves2', [8, 9, 10, 11, 10, 9]);
-    water.animations.add('waves3', [12, 13, 14, 15, 14, 13]);
-    water.animations.add('waves4', [16, 17, 18, 19, 18, 17]);
-    water.animations.add('waves5', [20, 21, 22, 23, 22, 21]);
-    water.animations.add('waves6', [24, 25, 26, 27, 26, 25]);
-    water.animations.add('waves7', [28, 29, 30, 31, 30, 29]);
-
-    // change to animation num
-    var n = 7;
-    water.animations.play('waves' + n, 8, true);
-    game.physics.enable(water, Phaser.Physics.ARCADE);
-    water.body.collideWorldBounds = true;
-    water.body.immovable = true;
-    water.body.allowGravity = false;
-    
     // let the magic begin
     game.world.setChildIndex(ui, game.world.children.length - 1);
     
+    crumblingSound = game.add.audio('crumbling');
     
+    music = game.add.audio('spaceloop');
+    music.loop = true
+    music.volume = 0.2;
+    music.play();
+
+    
+}
+
+function createJoystick() {
     pad = game.plugins.add(Phaser.VirtualJoystick);
     
     stick = pad.addStick(0, 0, 200, 'arcade');
-    stick.showOnTouch = true;
+    stick.alignBottomLeft();
+    stick.showOnTouch = true; // remove default handlers
+    stick.pad.game.input.onDown.remove(stick.checkDown, stick);// add in your own
+    game.input.onDown.add(checkDown, this);function checkDown(pointer) {  
+        if (pointer.x < game.width / 2)  {    
+        // right place? then call the Sticks checkDown method    
+            stick.checkDown(pointer);  
+        
+        }
+    }
 }
-
 
 function actionTouchButton() {
     if (facing !== 'idle') {
@@ -350,6 +353,16 @@ function stickLeft() {
     return stick.isDown &&
         // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
         stick.x < 0; 
+}
+
+function stickUp() {
+    return stick.isDown &&
+        stick.y < -0.3; 
+}
+
+function stickDown() {
+    return stick.isDown &&
+        stick.y > 0.5; 
 }
 
 function stickRight() {
@@ -384,14 +397,16 @@ function update() {
 
     player.body.velocity.x = 0;
 
-    if (stickLeft() || cursors.left.isDown ||
-        testTouch(leftTouch) ||
-        testTouch(leftJumpTouch)) {
+    if (stickLeft() || cursors.left.isDown //||
+        //testTouch(leftTouch) ||
+        //testTouch(leftJumpTouch)
+        ) {
         movePlayerLeft();
     }
-    else if (stickRight() || cursors.right.isDown ||
-        testTouch(rightTouch) ||
-        testTouch(rightJumpTouch)) {
+    else if (stickRight() || cursors.right.isDown //||
+        //testTouch(rightTouch) ||
+        //testTouch(rightJumpTouch)
+        ) {
         movePlayerRight();
     }
     else {
@@ -416,8 +431,9 @@ function update() {
     }
 
     if (actionButton.isDown ||
-        testTouch(actionTouch) ||
-        testTouch(breakActionTouch)
+        testTouch(actionTouch)
+        //||
+        //testTouch(breakActionTouch)
         ) {
         actionTouchButton();
     }
@@ -427,99 +443,73 @@ function update() {
     inWater = water.worldPosition.y < player.worldPosition.y;
     if (inWater) speed = 100;
     
-    if (jumpButton.isDown ||
-        testTouch(jumpTouch) ||
-        testTouch(leftJumpTouch) ||
-        testTouch(rightJumpTouch)) {
+    if (stickUp() ||
+        jumpButton.isDown ||
+        testTouch(jumpTouch) 
+        //||
+        //testTouch(leftJumpTouch) ||
+        //testTouch(rightJumpTouch)
+        ) {
         jumpTouchButton();
     }
 
-    if (breakButton.isDown || testTouch(breakTouch) || testTouch(breakActionTouch)) {
+    if (breakButton.isDown || testTouch(breakTouch) 
+        //|| testTouch(breakActionTouch)
+        ) {
         //map.layers[0].data
         var x = facing == 'left' ?
             player.x - 8 :
             player.x + 32;
         var tile = map.getTileWorldXY(x, player.y + 16);
         if (tile) {
-            particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-            map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-            gm.breakTile(x, player.y + 16)
-            
-            
-            gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-            breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-            docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+            breakTile(tile, x, 16)
         }
         var tile = map.getTileWorldXY(x, player.y + 32);
         if (tile) {
-            particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-            map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-            gm.breakTile(x, player.y + 32)
-            
-            gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-            breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-            docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+            breakTile(tile, x, 32)
         }
         
         if (jumpButton.isDown ||
-        testTouch(jumpTouch) ||
-        testTouch(leftJumpTouch) ||
-        testTouch(rightJumpTouch)) {
+            testTouch(jumpTouch) 
+        ) {
             var tile = map.getTileWorldXY(player.x, player.y + 4);
             if (tile) {
-                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-                gm.breakTile(player.x, player.y + 4);
-                
-                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-                breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+                breakTile(tile, x, 32)
             }      
 
             var tile = map.getTileWorldXY(player.x + 16, player.y + 4);
             if (tile) {
-                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-                gm.breakTile(player.x + 16, player.y + 4);
-                
-                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-                breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+                breakTile(tile, player.x + 16, player.height + 4)
             } 
             
         }
         
-        if (cursors.down.isDown) { //||
-        //testTouch(jumpTouch) ||
-        //testTouch(leftJumpTouch) ||
-        //testTouch(rightJumpTouch)) {
+        if (cursors.down.isDown
+          || stickDown()
+        ) {
             var x = lastFacing == 'left' ?
             player.x - ( cursors.left.isDown ? 24 : 8):
             player.x + player.width + ( cursors.right.isDown ? 24 : 8);
             var tile = map.getTileWorldXY(x, player.y + player.height + 4);
             if (tile) {
-                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-                gm.breakTile(x, player.y + player.height + 4);
-                
-                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-                breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+                breakTile(tile, x, player.height + 4)
             }      
-/*
-            var tile = map.getTileWorldXY(player.x + 16, player.y + 4);
-            if (tile) {
-                particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-                map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-                gm.breakTile(player.x + 16, player.y + 4);
-                
-                gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-                breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-                docCookies.setItem('breakCounter', gm.config.game.breakCounter);
-            } */
             
         }
     }
+}
+
+function breakTile(tile, x, y) {
+    if (!crumblingSound.isPlaying)
+        crumblingSound.play();
+    particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+    map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+    gm.breakTile(x, player.y + y)
+    
+    
+    gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+    breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
+    docCookies.setItem('breakCounter', gm.config.game.breakCounter);
 }
 
 function render() {

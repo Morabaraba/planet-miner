@@ -18,7 +18,7 @@ var GameMaster = function(GameMasterConfig) {
         if (level !== '') {
             gm.config.game.level = level;
         }
-        
+       
         m.mount(document.getElementById('chat-app'), {
             controller: chat.controller,
             view: chat.view
@@ -27,6 +27,7 @@ var GameMaster = function(GameMasterConfig) {
         // let the cookie monster eat our state.
         self.saveConfig();
     } catch (e) {
+        debugger;
         console.error(e, arguments, this);
         //tell our screen loader loop something went wrong
         self.err = e;
