@@ -62,16 +62,16 @@ function startGame() {
 
 function preload() {
     // we load our JSON tiled map in our createMap
-    game.load.image('tiles-1', 'assets/games/starstruck/tiles-1.png');
+    game.load.image('tiles-1', 'images/games/starstruck/tiles-1.png');
     game.load.image('RPGpack_sheet', 'images/RPGpack_sheet.png');
-    game.load.spritesheet('dude', 'assets/games/starstruck/dude.png', 32, 48);
-    game.load.spritesheet('droid', 'assets/games/starstruck/droid.png', 32, 32);
-    game.load.image('starSmall', 'assets/games/starstruck/star.png');
-    game.load.image('starBig', 'assets/games/starstruck/star2.png');
-    game.load.image('background', 'assets/games/starstruck/background2.png');
-    game.load.image('diamond', 'assets/sprites/diamond.png');
+    game.load.spritesheet('dude', 'images/games/starstruck/dude.png', 32, 48);
+    game.load.spritesheet('droid', 'images/games/starstruck/droid.png', 32, 32);
+    game.load.image('starSmall', 'images/games/starstruck/star.png');
+    game.load.image('starBig', 'images/games/starstruck/star2.png');
+    game.load.image('background', 'images/games/starstruck/background2.png');
+    game.load.image('diamond', 'images/sprites/diamond.png');
     game.load.image('rock', 'images/rock.png');
-    game.load.spritesheet('waters', 'assets/sprites/waters.png', 32, 400, 32);
+    game.load.spritesheet('waters', 'images/sprites/waters.png', 32, 400, 32);
     
     // keyboard and input assets
     game.load.image("btn-fullscreen", "images/Blank_White_Resize.png");
