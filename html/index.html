@@ -28,6 +28,9 @@ body{
 }
 .blackground {
     background: black;
+    background-image: url("images/bg-hubble-telescope.jpg");
+    background-repeat: no-repeat;
+    background-size:cover
 }
 
 span.ion-arrow-expand {
@@ -35,10 +38,18 @@ span.ion-arrow-expand {
     font-size: 32px;
     position: absolute;
 }
+#backdrop {
+    top: 0;
+    left: 0;
+	width: 100%;
+	z-index: -99;
+	position: absolute;
+}
 
 </style>
 </head>
 <body class="blackground">
+
 <span id="fullscreen" class="ion-arrow-expand" data-pack="default" data-tags="fullscreen"></span>
 <div id="container">                
     <iframe src="game.html" allowfullscreen="true"  autofocus="true"></iframe>
@@ -74,6 +85,5 @@ span.ion-arrow-expand {
         }
     </script>
 </div>
-
 
 </body>

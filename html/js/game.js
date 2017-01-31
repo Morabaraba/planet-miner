@@ -1,42 +1,51 @@
 // We have pixi.js's to colour our screen and Phaser to challenge the player! 
 /* global Phaser */
-// Die baas.
+// The Boss, or GameMaster
 /* global gm */
 
 // our game variables that is used with phaser.
 var game;
+var bg;
 var map;
+var ui
 var tileset;
 var layer;
+
+// player information and status
 var player;
 var facing = 'left';
 var lastFacing = 'left';
-var jumpTimer = 0;
-var jumpButton;
-var actionButton;
-var bg;
-var speed;
-var normalSpeed ;
-var inWater;
-var breakCounterText;
 var facingJump;
+var jumpTimer = 0;
+
+var speed;
+var normalSpeed;
+// disabled for now
+var inWater = false;
+
+// water sprite
+var water;
+// sprite for text with counter for tile breaks
+var breakCounterText;
+
 // Keyboard cursors
 var cursors;
 // Our Touch Button callbacks
-var rightTouch;
-var leftTouch;
 var actionTouch;
 var jumpTouch;
 var pad;
 var stick;
-var water;
+
+// Sound
 var music;
 var crumblingSound;
+
+// Particle emitters
 var emitter;
 
 function startGame() {
-    // party allready going? return out of the function.
-    if (game) return;
+    // party allready going?
+    if (game) return game;
     // else lets get the `game` started
     game = new Phaser.Game(gm.config.game.width,
         gm.config.game.height,
@@ -62,28 +71,24 @@ function preload() {
     game.load.image('background', 'assets/games/starstruck/background2.png');
     game.load.image('diamond', 'assets/sprites/diamond.png');
     game.load.image('rock', 'images/rock.png');
-
+    game.load.spritesheet('waters', 'assets/sprites/waters.png', 32, 400, 32);
+    
+    // keyboard and input assets
     game.load.image("btn-fullscreen", "images/Blank_White_Resize.png");
-    //game.load.image("btn-left", "images/Keyboard_White_Arrow_Left.png");
-    //game.load.image("btn-right", "images/Keyboard_White_Arrow_Right.png");
-    //game.load.image("btn-alt", "images/Keyboard_White_Alt.png");
-    //game.load.image("btn-ctrl", "images/Keyboard_White_Ctrl.png");
-    //game.load.image("btn-shift", "images/Keyboard_White_Shift.png");
     game.load.image("btn-chat", "images/chat-bubble.png");
     game.load.image("btn-joystick", "images/joystick100.png");
     game.load.image("btn-a", "images/shadedLight36.png");
     game.load.image("btn-b", "images/shadedLight37.png");    
-
-    game.load.spritesheet('waters', 'assets/sprites/waters.png', 32, 400, 32);
-    
     game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
     
+    // music and sound
     game.load.audio('crumbling', ['sound/Crumbling.mp3']);
     game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
 }
 
 function createMap(opt) {
     opt = opt || {};
+    // cleanout our current layer and map before creating the new objects
     if (layer) {
         layer.visible = false;
         layer.parent.remove(layer);
@@ -96,7 +101,6 @@ function createMap(opt) {
         map = undefined;
     };
     
-
     var load;
     function onLoadComplete () {
         var self = this;
@@ -128,9 +132,10 @@ function createMap(opt) {
 
     }
     function onFileError() {
-        chat.mq.client.unsubscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        
+        chat.mq.client.unsubscribe(buildTopic());
         gm.config.game.level = 'levels/level2.json';    
-        chat.mq.client.subscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        chat.mq.client.subscribe(buildTopic());
         createMap({load: true})
     }
     
@@ -141,16 +146,17 @@ function createMap(opt) {
         load.onFileError.addOnce(onFileError);
         game.load.start()
     } else {
+        console.log('WARNINGL why not load it?')
         addTilemap();
     }
 }
 
 
 function createWater() {
+    // TODO disabled for now
+    return;
     water = game.add.tileSprite(0, game.world.height - 128, 128 * 16, 24 * 16, 'waters');
     water.alpha = 0.5;
-
-    // water = game.add.sprite(0, 0, 'waters');
 
     water.animations.add('waves0', [0, 1, 2, 3, 2, 1]);
     water.animations.add('waves1', [4, 5, 6, 7, 6, 5]);
@@ -168,6 +174,22 @@ function createWater() {
     water.body.collideWorldBounds = true;
     water.body.immovable = true;
     water.body.allowGravity = false;
+}
+
+function createButton(x, y, z, cb) {
+    var sprite = game.add.button(x, y, z);
+    sprite.inputEnabled = true;
+    sprite.fixedToCamera = true;
+    if (cb) {
+        sprite.events.onInputDown.add(cb, this);
+    }
+    else {
+        sprite.input.start();
+    }
+    //sprite.input.onDown.add(cb, this);
+    //
+    ui.add(sprite);
+    return sprite;
 }
 function create() {
     game.stage.disableVisibilityChange = true;
@@ -195,6 +217,22 @@ function create() {
     
     mpsText = game.add.text(16, 48, '0', style);
     mpsText.fixedToCamera = true;
+
+    helpText = game.add.text(256, 64, ''
+        + 'Desktop:\n\n'
+        + 'Use the <ARROW KEYS> to move\n' 
+        + '<X> for break and <Y> for action\n' 
+        + '<ENTER> opens a chat window, \n'
+        + 'or u can use the top right button.\n\n'
+        + 'Mobile:\n\n'
+        + 'Tap and drag on the right side to move\n' 
+        + 'Button <A> for break <B> for action\n' 
+        + 'Use the joystick button top right\n'
+        + 'if you can not see the buttons\n\n'
+        + 'This message will destruct in 15 seconds...\n'
+        , style);
+    helpText.fixedToCamera = true;
+    setTimeout(function(){ helpText.visible = false; }, 15000);
     
     createJoystick();
     createWater();
@@ -217,108 +255,66 @@ function create() {
     escButton = game.input.keyboard.addKey(Phaser.Keyboard.ESC)
 
     var chatOpen = false;
-    chatFunction = function(){
+    function chatFunction() {
         chatOpen = !chatOpen;
         gm.showChat(chatOpen);
     }
     enterButton.onDown.add(chatFunction, this);
     escButton.onDown.add(chatFunction, this);
-
-    //  Stop the following keys from propagating up to the browser
-    // game.input.keyboard.addKeyCapture([ Phaser.Keyboard.LEFT, Phaser.Keyboard.RIGHT, Phaser.Keyboard.ALT, Phaser.Keyboard.CONTROL, Phaser.Keyboard.SHIFT  ]);
-
-    //var actionTouch = game.add.tileSprite(game.width - 128 , 128, 96 , 96, 'fullscreen');
-    //actionTouch.scale = 0.5;
-    function createButton(x, y, z, cb) {
-        var sprite = game.add.button(x, y, z);
-        sprite.inputEnabled = true;
-        sprite.fixedToCamera = true;
-        if (cb) {
-            sprite.events.onInputDown.add(cb, this);
-        }
-        else {
-            sprite.input.start();
-        }
-        //sprite.input.onDown.add(cb, this);
-        //
-        ui.add(sprite);
-        return sprite;
-    }
+    // allow the user to open chat with a button
+    chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
+    chatTouch.width = 34;
+    chatTouch.height = 34;
+    
+    // allow the user to set the game fullscreen
     createButton(game.width - 56, 48, 'btn-fullscreen', gm.goFullscreen).scale = {
         x: 0.5,
         y: 0.5
     };
 
-    game.width - 154
-    game.width - 256
-    actionTouch = createButton(game.width - 154, game.height - 148, 'btn-b');
-    actionTouch.scale = {
-        x: 1.2,
-        y: 1.2
-    };
-    actionTouch.alpha = 0.3;
-    //jumpTouch = createButton(144, game.height - 112, 'btn-alt');
-    //jumpTouch.scale = {
-    //    x: 1.2,
-    //    y: 1.2
-    //};
+    // btn-a break
     breakTouch = createButton(game.width - 300, game.height - 148, 'btn-a');
     breakTouch.scale = {
         x: 1.2,
         y: 1.2
     };
     breakTouch.alpha = 0.3;
-   /* breakActionTouch = createButton(game.width - 256, game.height - 208, 'btn-shift');
-    breakActionTouch.scale = {
-        x: 2.4,
+   
+    // btn-b action
+    actionTouch = createButton(game.width - 154, game.height - 148, 'btn-b');
+    actionTouch.scale = {
+        x: 1.2,
         y: 1.2
     };
-    breakActionTouch.alpha = 0.3;*/
+    actionTouch.alpha = 0.3;
     
-    chatTouch = createButton(game.width - 48, 8, 'btn-chat', chatFunction);
-    chatTouch.width = 34;
-    chatTouch.height = 34;
-
     if (game.device.desktop) {
-        //rightTouch.visible = false;
-        //leftTouch.visible = false; 
         actionTouch.visible = false;
-        //jumpTouch.visible = false; 
         breakTouch.visible = false;
-        //rightJumpTouch.visible = false; 
-        //leftJumpTouch.visible = false;
-        //breakActionTouch.visible = false;
-    
     };
-    joystickFunction = function(){
-        //rightTouch.visible  = !rightTouch.visible ;
-        //leftTouch.visible   = !leftTouch.visible  ; 
+    
+    function joystickFunction(){
         actionTouch.visible = !actionTouch.visible;
-        //jumpTouch.visible   = !jumpTouch.visible  ; 
         breakTouch.visible  = !breakTouch.visible ;
-        //rightJumpTouch.visible = !rightJumpTouch.visible; 
-        //leftJumpTouch.visible = !leftJumpTouch.visible;
-        //breakActionTouch.visible = !breakActionTouch.visible;
     }    
     joystickTouch = createButton(game.width - 48, 108, 'btn-joystick', joystickFunction);
     joystickTouch.width = 34;
     joystickTouch.height = 34;
     
     emitter = game.add.emitter(0, 0, 1000);
-
     emitter.makeParticles('rock');
     emitter.gravity = 200;
-    
-    // let the magic begin
-    game.world.setChildIndex(ui, game.world.children.length - 1);
     
     crumblingSound = game.add.audio('crumbling');
     
     music = game.add.audio('spaceloop');
     music.loop = true
-    music.volume = 0.2;
+    
+    // let the magic begin
     music.play();
-
+    music.volume = 0.2;
+    
+    game.world.setChildIndex(ui, game.world.children.length - 1);
     
 }
 
@@ -440,8 +436,8 @@ function update() {
     else {
         speed = normalSpeed;
     }
-    inWater = water.worldPosition.y < player.worldPosition.y;
-    if (inWater) speed = 100;
+    //inWater = water.worldPosition.y < player.worldPosition.y;
+    //if (inWater) speed = 100;
     
     if (stickUp() ||
         jumpButton.isDown ||

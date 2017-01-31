@@ -36,49 +36,22 @@ chat.Message = function(text) {
 chat.Message.prototype.sessionId = function() {
     return chat.config.clientId //+ '-' + gm.config.game.player.nick;
 }
+
+function buildTopic() {
+    return chat.config.topic + '.' + gm.config.game.level.split('/')[1] + gm.config.game.instance
+}
+
 // convert a Message to a Paho Mqtt message
 chat.Message.prototype.mqtt = function(topic) {
     console.log(this.msg);
     var encodedData = msgpack.encode(this.msg);
     //console.log(encodedData);
     var message = new Paho.MQTT.Message(encodedData);
-    message.destinationName = chat.config.topic //topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
+    message.destinationName = topic || buildTopic();
     //console.log(message.payloadBytes);
     return message;    
 };
-/*
-chat.Message.prototype.mqtt = function(topic) {
-    var t;
-    if (this.msg.type == this.types.MESSAGE) {
-        t = Bert.tuple(this.msg.type, this.sessionId()  , Date.now(), this.msg.text)
-    } else
-    if (this.msg.type == this.types.MOVE) {
-        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.x, this.msg.y, this.msg.idle)
-    } else
-    if (this.msg.type == this.types.CREATE) {
-        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now())
-    } else
-    if (this.msg.type == this.types.ACTION) {
-        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.floor)
-    } else 
-    if (this.msg.type == this.types.BREAK) {
-        t = Bert.tuple(this.msg.type, this.sessionId(), Date.now(), this.msg.x, this.msg.y)
-    } else 
-    {
-        console.error('unknown type for mqtt', msg)
-        chat.vm.addMessage(new chat.Message('Sending unknown message type', 'msg', true));
-        return;
-    }
-    var berty = Bert.encode(t);
-    debugger
-    window.berty = berty;
-    console.log(Bert.pp_bytes(berty))
-    var message = new Paho.MQTT.Message(berty);
-    message.destinationName = topic || (chat.config.topic + '.' + gm.config.game.level.split('/')[1]);
-    console.log(message.payloadBytes);
-    return message;
-}
-*/
+
 chat.Message.prototype.types = {
     MESSAGE: 'msg',
     MOVE: 'mov',
@@ -89,7 +62,6 @@ chat.Message.prototype.types = {
 // TODO HACK HACK HHACK
 chat.Message.types  = chat.Message.prototype.types 
 chat.MessageList = Array;
-
 
 chat.mq = {};
 chat.mq.init = function() {
@@ -106,17 +78,18 @@ chat.mq.init = function() {
     /* hook up our chat onConnect and onFailure functions to our mqtt connection options */
     gm.config.mqtt.onSuccess = chat.mq.onConnect;
     gm.config.mqtt.onFailure = chat.mq.onFailure;
+    
     // debugger;
-    //gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
+    gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
+
     // we shallow clone our connectOptions so that if we reconnect we don't inherit previous connection information.
     this.client.connect(_.clone(gm.config.mqtt));
 }
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
-    //var topic = chat.config.topic + '.' +  gm.config.game.level.split('/')[1];
-    //console.log('on Connect, topic', topic)
-    //chat.mq.client.subscribe(topic);
-    chat.mq.client.subscribe(chat.config.topic);
+    var topic = buildTopic();
+    console.log('on Connect, topic', topic)
+    chat.mq.client.subscribe(topic);
     //var message = new chat.Message("has entered " + chat.config.topic + ".");
     //chat.mq.client.send(message.mqtt());
     
@@ -262,10 +235,10 @@ chat.vm.executeCommand = function (cmd) {
             chat.vm.addMessage(new chat.Message('subscribed to topic '+ chat.config.topic));
             return true;
         }
-        chat.mq.client.unsubscribe(chat.config.topic);    
+        chat.mq.client.unsubscribe(chat.config.topic /* TODO map? */);    
         chat.config.topic = cmdParts[1];    
         chat.mq.client.subscribe(chat.config.topic);
-        chat.mq.send('Changed topic to ' + chat.config.topic);
+        chat.mq.send('Changed topic to ' + chat.config.topic /* TODO map? */);
         return true;
     };
 
@@ -314,9 +287,9 @@ chat.vm.executeCommand = function (cmd) {
             //console.log('/level "levels/level1.json');
             return true;
         }
-        chat.mq.client.unsubscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        chat.mq.client.unsubscribe(buildTopic());
         gm.config.game.level = 'levels/' + (cmdParts.slice(1).join(' ')) + '.json';
-        chat.mq.client.subscribe(chat.config.topic + '.' +  gm.config.game.level.split('/')[1]);
+        chat.mq.client.subscribe(buildTopic());
         createMap({load: true});
         return true;
     };

@@ -15,7 +15,11 @@ var GameMaster = function(GameMasterConfig) {
         // Well who is playing with you and who do you trust?
         self.players = {};
         var level = window.location.search.substring(1) || window.top.location.search.substring(1);
+        // we use the hash as a instance identifier
+        gm.config.game.instance = window.location.hash.slice(1) || window.top.location.hash.slice(1);
+        
         if (level !== '') {
+            console.log('loading level', level);
             gm.config.game.level = level;
         }
        
@@ -254,6 +258,7 @@ function Sim() {
         self.tick = Date.now();
         if (self.tick > self.tickNext) { 
             queuePlaying.forEach(function(event){
+                debugger
                 game.play();
             })
         }
