@@ -43,49 +43,6 @@ var crumblingSound;
 // Particle emitters
 var emitter;
 
-function startGame() {
-    // party allready going?
-    if (game) return game;
-    // else lets get the `game` started
-    game = new Phaser.Game(gm.config.game.width,
-        gm.config.game.height,
-        Phaser.CANVAS,
-        'phaser', {
-            preload: preload,
-            create: create,
-            update: update,
-            render: render
-        }
-    );
-    return game;
-};
-
-function preload() {
-    // we load our JSON tiled map in our createMap
-    game.load.image('tiles-1', 'images/games/starstruck/tiles-1.png');
-    game.load.image('RPGpack_sheet', 'images/RPGpack_sheet.png');
-    game.load.spritesheet('dude', 'images/games/starstruck/dude.png', 32, 48);
-    game.load.spritesheet('droid', 'images/games/starstruck/droid.png', 32, 32);
-    game.load.image('starSmall', 'images/games/starstruck/star.png');
-    game.load.image('starBig', 'images/games/starstruck/star2.png');
-    game.load.image('background', 'images/games/starstruck/background2.png');
-    game.load.image('diamond', 'images/sprites/diamond.png');
-    game.load.image('rock', 'images/rock.png');
-    game.load.spritesheet('waters', 'images/sprites/waters.png', 32, 400, 32);
-    
-    // keyboard and input assets
-    game.load.image("btn-fullscreen", "images/Blank_White_Resize.png");
-    game.load.image("btn-chat", "images/chat-bubble.png");
-    game.load.image("btn-joystick", "images/joystick100.png");
-    game.load.image("btn-a", "images/shadedLight36.png");
-    game.load.image("btn-b", "images/shadedLight37.png");    
-    game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
-    
-    // music and sound
-    game.load.audio('crumbling', ['sound/Crumbling.mp3']);
-    game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
-}
-
 function createMap(opt) {
     opt = opt || {};
     // cleanout our current layer and map before creating the new objects
@@ -105,12 +62,7 @@ function createMap(opt) {
     function onLoadComplete () {
         var self = this;
         setTimeout(function() {
-             //map = mapGroup.create(0,0,0,0,'level1');
             map = game.add.tilemap('level1');
-            //game.world.setChildIndex(ui,0)
-            //ui.bringToTop();
-            //mapGroup.add(map);
-            //game.world.swap(ui, map);
             map.addTilesetImage('tiles-1');
             map.addTilesetImage('RPGpack_sheet');
             map.setCollisionByExclusion([
@@ -124,7 +76,6 @@ function createMap(opt) {
             layer = map.createLayer('Tile Layer 1');
             layer.resizeWorld();
             game.world.setChildIndex(layer, 1)
-                      
             levelText.text = gm.config.game.level;
             root.gm.showGameScreen()
             game.paused = false;
@@ -132,7 +83,6 @@ function createMap(opt) {
 
     }
     function onFileError() {
-        
         chat.mq.client.unsubscribe(buildTopic());
         gm.config.game.level = 'levels/level2.json';    
         chat.mq.client.subscribe(buildTopic());
@@ -176,6 +126,67 @@ function createWater() {
     water.body.allowGravity = false;
 }
 
+function createJoystick() {
+    pad = game.plugins.add(Phaser.VirtualJoystick);
+    
+    stick = pad.addStick(0, 0, 200, 'arcade');
+    stick.alignBottomLeft();
+    stick.showOnTouch = true; // remove default handlers
+    stick.pad.game.input.onDown.remove(stick.checkDown, stick);// add in your own
+    game.input.onDown.add(checkDown, this);function checkDown(pointer) {  
+        if (pointer.x < game.width / 2)  {    
+        // right place? then call the Sticks checkDown method    
+            stick.checkDown(pointer);  
+        
+        }
+    }
+}
+
+function actionTouchButton() {
+    if (facing !== 'idle') {
+        if (player.body.onFloor()) {
+            particleBurst(player, facing === 'left' ? player.width : 1);
+            speed = gm.config.game.player.superSpeed;
+            normalSpeed = gm.config.game.player.normalSpeed;
+            gm.actionPlayer();
+        }
+    }
+}
+
+function stickLeft() {
+    return stick.isDown &&
+        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
+        stick.x < 0; 
+}
+
+function stickUp() {
+    return stick.isDown &&
+        stick.y < -0.3; 
+}
+
+function stickDown() {
+    return stick.isDown &&
+        stick.y > 0.5; 
+}
+
+function stickRight() {
+    return stick.isDown &&
+        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
+        stick.x > 0; 
+}
+
+function testTouch(sprite) {
+    if (!sprite || !sprite.input) return false;
+    if (sprite.input.pointerDown(game.input.activePointer.id)) return true;
+    var result = false;
+    for (var x = 1; x <= game.input.totalActivePointers; x++) {
+        result = result || sprite.input.pointerDown(game.input['pointer' + x].id);
+        if (result)
+            return result;
+    }
+    return result;
+}
+
 function createButton(x, y, z, cb) {
     var sprite = game.add.button(x, y, z);
     sprite.inputEnabled = true;
@@ -186,11 +197,130 @@ function createButton(x, y, z, cb) {
     else {
         sprite.input.start();
     }
-    //sprite.input.onDown.add(cb, this);
-    //
     ui.add(sprite);
     return sprite;
 }
+
+
+function breakTile(tile, x, y) {
+    if (!crumblingSound.isPlaying)
+        crumblingSound.play();
+    particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+    map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+    gm.breakTile(x, player.y + y)
+    
+    
+    gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+    breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
+    docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+}
+
+function jumpTouchButton() {
+    function jumpUp() {
+        if (inWater)  player.body.velocity.y = -150;
+        else  player.body.velocity.y = -250;
+        jumpTimer = game.time.now + 750;
+        gm.movePlayer(player, {
+            idle: facing === 'idle'
+        });
+    }
+    if (player.body.onFloor() && game.time.now > jumpTimer || inWater) {
+        jumpUp()
+        facingJump = undefined; //facing == 'right' ? 'left' : 'right';
+    }
+    else if (player.body.onWall() && game.time.now > jumpTimer && (facingJump == undefined || facingJump != facing)) {
+        facingJump = facing;
+        jumpUp();
+    }
+}
+
+function movePlayerLeft() {
+    player.body.velocity.x = -1 *  gm.config.game.player.normalSpeed;
+    if (facing != 'left') {
+        player.animations.play('left');
+        lastFacing = facing === 'idle' ? lastFacing : facing;
+        facing = 'left';
+    }
+    gm.movePlayer(player, {
+        idle: facing === 'idle'
+    });
+}
+
+function movePlayerRight() {
+    player.body.velocity.x =  gm.config.game.player.normalSpeed;
+    if (facing != 'right') {
+        player.animations.play('right');
+        lastFacing = facing === 'idle' ? lastFacing : facing;
+        facing = 'right';
+    }
+    gm.movePlayer(player, {
+        idle: facing === 'idle'
+    });
+}
+
+function particleBurst(pointer, offset) {
+    offset = offset || 0;
+    //  Position the emitter where the mouse/touch event was
+    if (offset) {
+        emitter.x = pointer.x + offset;
+        emitter.y = pointer.y + pointer.height;
+    }
+    else {
+        emitter.x = pointer.x
+        emitter.y = pointer.y
+    }
+    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
+    //  The second gives each particle a 2000ms lifespan
+    //  The third is ignored when using burst/explode mode
+    //  The final parameter (10) is how many particles will be emitted in this single burst
+    emitter.start(true, 1000, null, 2);
+
+}
+
+function startGame() {
+    // party allready going?
+    if (game) return game;
+    // else lets get the `game` started
+    game = new Phaser.Game(gm.config.game.width,
+        gm.config.game.height,
+        Phaser.CANVAS,
+        'phaser', {
+            preload: preload,
+            create: create,
+            update: update,
+            render: render
+        }
+    );
+    return game;
+};
+
+function preload() {
+     game.time.advancedTiming = true;
+    // we load our JSON tiled map in our createMap
+    game.load.image('tiles-1', 'images/games/starstruck/tiles-1.png');
+    game.load.image('RPGpack_sheet', 'images/RPGpack_sheet.png');
+    game.load.spritesheet('dude', 'images/games/starstruck/dude.png', 32, 48);
+    game.load.spritesheet('droid', 'images/games/starstruck/droid.png', 32, 32);
+    game.load.image('starSmall', 'images/games/starstruck/star.png');
+    game.load.image('starBig', 'images/games/starstruck/star2.png');
+    game.load.image('background', 'images/games/starstruck/background2.png');
+    game.load.image('diamond', 'images/sprites/diamond.png');
+    game.load.image('rock', 'images/rock.png');
+    game.load.spritesheet('waters', 'images/sprites/waters.png', 32, 400, 32);
+    
+    // keyboard and input assets
+    game.load.image("btn-fullscreen", "images/Blank_White_Resize.png");
+    game.load.image("btn-chat", "images/chat-bubble.png");
+    game.load.image("btn-joystick", "images/joystick100.png");
+    game.load.image("btn-a", "images/shadedLight36.png");
+    game.load.image("btn-b", "images/shadedLight37.png");    
+    game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
+    
+    // music and sound
+    game.load.audio('crumbling', ['sound/Crumbling.mp3']);
+    game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
+}
+
 function create() {
     game.stage.disableVisibilityChange = true;
     
@@ -273,7 +403,7 @@ function create() {
     };
 
     // btn-a break
-    breakTouch = createButton(game.width - 300, game.height - 148, 'btn-a');
+    breakTouch = createButton(game.width - 154 , game.height - 148, 'btn-b');
     breakTouch.scale = {
         x: 1.2,
         y: 1.2
@@ -281,7 +411,7 @@ function create() {
     breakTouch.alpha = 0.3;
    
     // btn-b action
-    actionTouch = createButton(game.width - 154, game.height - 148, 'btn-b');
+    actionTouch = createButton(game.width - 300, game.height - 148, 'btn-a');
     actionTouch.scale = {
         x: 1.2,
         y: 1.2
@@ -316,67 +446,6 @@ function create() {
     
     game.world.setChildIndex(ui, game.world.children.length - 1);
     
-}
-
-function createJoystick() {
-    pad = game.plugins.add(Phaser.VirtualJoystick);
-    
-    stick = pad.addStick(0, 0, 200, 'arcade');
-    stick.alignBottomLeft();
-    stick.showOnTouch = true; // remove default handlers
-    stick.pad.game.input.onDown.remove(stick.checkDown, stick);// add in your own
-    game.input.onDown.add(checkDown, this);function checkDown(pointer) {  
-        if (pointer.x < game.width / 2)  {    
-        // right place? then call the Sticks checkDown method    
-            stick.checkDown(pointer);  
-        
-        }
-    }
-}
-
-function actionTouchButton() {
-    if (facing !== 'idle') {
-        if (player.body.onFloor()) {
-            particleBurst(player, facing === 'left' ? player.width : 1);
-            speed = gm.config.game.player.superSpeed;
-            normalSpeed = gm.config.game.player.normalSpeed;
-            gm.actionPlayer();
-        }
-    }
-}
-
-function stickLeft() {
-    return stick.isDown &&
-        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
-        stick.x < 0; 
-}
-
-function stickUp() {
-    return stick.isDown &&
-        stick.y < -0.3; 
-}
-
-function stickDown() {
-    return stick.isDown &&
-        stick.y > 0.5; 
-}
-
-function stickRight() {
-    return stick.isDown &&
-        // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
-        stick.x > 0; 
-}
-
-function testTouch(sprite) {
-    if (!sprite || !sprite.input) return false;
-    if (sprite.input.pointerDown(game.input.activePointer.id)) return true;
-    var result = false;
-    for (var x = 1; x <= game.input.totalActivePointers; x++) {
-        result = result || sprite.input.pointerDown(game.input['pointer' + x].id);
-        if (result)
-            return result;
-    }
-    return result;
 }
 
 function update() {
@@ -495,85 +564,11 @@ function update() {
     }
 }
 
-function breakTile(tile, x, y) {
-    if (!crumblingSound.isPlaying)
-        crumblingSound.play();
-    particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-    map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-    gm.breakTile(x, player.y + y)
-    
-    
-    gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-    breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-    docCookies.setItem('breakCounter', gm.config.game.breakCounter);
-}
-
 function render() {
+    game.debug.text(game.time.fps || '--', 2, 14, "#00ff00")
     if(gm.config.game.debug) {
         game.debug.text(game.time.physicsElapsed, 16, 248);
         game.debug.body(player);
         game.debug.bodyInfo(player, 16, 264);
     }
-}
-
-function jumpTouchButton() {
-    function jumpUp() {
-        if (inWater)  player.body.velocity.y = -150;
-        else  player.body.velocity.y = -250;
-        jumpTimer = game.time.now + 750;
-        gm.movePlayer(player, {
-            idle: facing === 'idle'
-        });
-    }
-    if (player.body.onFloor() && game.time.now > jumpTimer || inWater) {
-        jumpUp()
-        facingJump = undefined; //facing == 'right' ? 'left' : 'right';
-    }
-    else if (player.body.onWall() && game.time.now > jumpTimer && (facingJump == undefined || facingJump != facing)) {
-        facingJump = facing;
-        jumpUp();
-    }
-}
-
-function movePlayerLeft() {
-    player.body.velocity.x = -1 *  gm.config.game.player.normalSpeed;
-    if (facing != 'left') {
-        player.animations.play('left');
-        lastFacing = facing === 'idle' ? lastFacing : facing;
-        facing = 'left';
-    }
-    gm.movePlayer(player, {
-        idle: facing === 'idle'
-    });
-}
-
-function movePlayerRight() {
-    player.body.velocity.x =  gm.config.game.player.normalSpeed;
-    if (facing != 'right') {
-        player.animations.play('right');
-        lastFacing = facing === 'idle' ? lastFacing : facing;
-        facing = 'right';
-    }
-    gm.movePlayer(player, {
-        idle: facing === 'idle'
-    });
-}
-
-function particleBurst(pointer, offset) {
-    offset = offset || 0;
-    //  Position the emitter where the mouse/touch event was
-    if (offset) {
-        emitter.x = pointer.x + offset;
-        emitter.y = pointer.y + pointer.height;
-    }
-    else {
-        emitter.x = pointer.x
-        emitter.y = pointer.y
-    }
-    //  The first parameter sets the effect to "explode" which means all particles are emitted at once
-    //  The second gives each particle a 2000ms lifespan
-    //  The third is ignored when using burst/explode mode
-    //  The final parameter (10) is how many particles will be emitted in this single burst
-    emitter.start(true, 1000, null, 2);
-
 }

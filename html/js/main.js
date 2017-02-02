@@ -249,18 +249,18 @@ chat.vm.executeCommand = function (cmd) {
     if (cmd === '/?' || cmd === '/help') {
         var msg;
         if (gm.game.device.desktop) {
-            msg = 'Move around with the arrow keys and use [ctrl] for run [alt] for jump and [shift] to break.';
+            msg = 'Move around with the <ARROW KEYS> and use <Z> for action and [X] for break.';
         }
         else {
-            msg = 'Tap the joystick icon on your right to see the on-screen touchpad.';
+            msg = 'Tap the joystick icon on your right to see the on-screen touchpad. Tap on left to see virtual joystick';
         }
             
         msg +='<br>You can also execute the following commands: <br>' + 
-            '<li> /level level1 - Loads a level. level1 to level5.</li>' +
-            '<li> /config - Print and set config.</li>' +
-            '<li> /msg [type] [message] - Construct a network message.</li>' +
-            '<li> /repl [eval statement] - JS eval for people who like to type /repl, instead of using the console.</li>' +
-            '<li> /clientid [new client id] - Change your name.</li>' +
+            '<li> /level level1 - Loads a level. level1 to level5. eg, "/level level5" </li>' +
+            //'<li> /config - Print and set config.</li>' +
+            //'<li> /msg [type] [message] - Construct a network message.</li>' +
+            //'<li> /repl [eval statement] - JS eval for people who like to type /repl, instead of using the console.</li>' +
+            //'<li> /clientid [new client id] - Change your name.</li>' +
             '<li> /clear - Remove all previous chat and command messages.</li>' +
             '<li> /version - Print the version number.</li>' +
             '';//'<li> /topic [topic key] - listen to another topic key.</li>';
