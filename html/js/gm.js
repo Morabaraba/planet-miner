@@ -74,7 +74,9 @@ GameMaster.prototype.actions = {
     MESSAGE: 'msg',
     MOVE: 'mov',
     CREATE: 'crt',
-    ACTION: 'act'
+    ACTION: 'act',
+    BREAK: 'brk',
+    DAMAGE: 'dmg'
 };
 GameMaster.prototype.movePlayerRight = function() {
     var self = this;
@@ -102,6 +104,10 @@ GameMaster.prototype.createPlayer = function(msg) {
     player.animations.add('right', [5, 6, 7, 8], 10, true);
     
     self.players[msg.clientId] = player;
+    
+    game.physics.enable(player, Phaser.Physics.ARCADE);
+    player.body.bounce.y = gm.config.game.player.bounceY;
+    
     chat.mq.send({type: 'crt'});
     return player;
 }
@@ -161,7 +167,12 @@ GameMaster.prototype.breakTile = function(x, y) {
     var self = this;
     chat.mq.send({type: 'brk', x: x, y: y});
 }
-    
+
+GameMaster.prototype.damageTile = function(x, y) {
+    var self = this;
+    chat.mq.send({type: 'dmg', x: x, y: y});
+}
+
 GameMaster.prototype.updatePlayer = function(msg) {
     var self = this;
     if (msg.clientId === self.currentSessionId()) return;

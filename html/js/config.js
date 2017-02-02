@@ -18,9 +18,12 @@ gm.config = {
             nick : nick,
             bounceY: 0.2,
             normalSpeed: 200,
-            superSpeed: 300
+            superSpeed: 300,
         },
         level: 'levels/level2.json',
+        defaultTileHealth : 4,
+        defaultBreakDelay : 300,
+        
         breakCounter: 0 // because deon
     },
     mqtt: mqtt,

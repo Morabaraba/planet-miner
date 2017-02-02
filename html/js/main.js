@@ -57,7 +57,8 @@ chat.Message.prototype.types = {
     MOVE: 'mov',
     CREATE: 'crt',
     ACTION: 'act',
-    BREAK : 'brk'
+    BREAK : 'brk',
+    DAMAGE : 'dmg'
 }
 // TODO HACK HACK HHACK
 chat.Message.types  = chat.Message.prototype.types 
@@ -152,6 +153,14 @@ chat.mq.onMessageArrived = function(message) {
         if (tile) {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+        }
+    } else
+    if (msg.type == chat.Message.types.DAMAGE) {
+        if (msg.clientId != chat.config.clientId) {
+            var tile = map.getTileWorldXY(msg.x, msg.y);
+            if (tile) {
+                map.damageTile(tile.worldX, tile.worldY, tile, true);
+            }
         }
     } else {
         var textMsg = 'Something unknown is happening.';
@@ -249,7 +258,7 @@ chat.vm.executeCommand = function (cmd) {
     if (cmd === '/?' || cmd === '/help') {
         var msg;
         if (gm.game.device.desktop) {
-            msg = 'Move around with the <ARROW KEYS> and use <Z> for action and [X] for break.';
+            msg = 'Move around with the [ARROW KEYS] and use [Z] for action and [X] for break.';
         }
         else {
             msg = 'Tap the joystick icon on your right to see the on-screen touchpad. Tap on left to see virtual joystick';
@@ -263,6 +272,10 @@ chat.vm.executeCommand = function (cmd) {
             //'<li> /clientid [new client id] - Change your name.</li>' +
             '<li> /clear - Remove all previous chat and command messages.</li>' +
             '<li> /version - Print the version number.</li>' +
+            '<li> /version - Print the version number.</li>' +
+            '<li> /setbreakcooldown [number]- How long it takes in milliseconds to attack/break.</li>' +
+            '<li> /settilehealth [number]- Default tile health on first hit/collision.</li>' +
+            
             '';//'<li> /topic [topic key] - listen to another topic key.</li>';
             
         chat.vm.addMessage(new chat.Message(msg));
@@ -273,6 +286,16 @@ chat.vm.executeCommand = function (cmd) {
         chat.vm.list.length = 0;
         return true;
     }
+    
+    if (cmd === '/setbreakcooldown') {
+        gm.config.game.defaultBreakDelay = cmdParts[1];
+        return true;
+    }    
+
+    if (cmd === '/settilehealth') {
+        gm.config.game.defaultTileHealth = cmdParts[1];
+        return true;
+    }   
     
     if (cmd === '/version') {
         var msg = gm.config.game.version; 

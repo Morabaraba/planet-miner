@@ -17,6 +17,8 @@ var facing = 'left';
 var lastFacing = 'left';
 var facingJump;
 var jumpTimer = 0;
+var jumping = false;
+var jumpMoveDelay;
 
 var speed;
 var normalSpeed;
@@ -27,6 +29,7 @@ var inWater = false;
 var water;
 // sprite for text with counter for tile breaks
 var breakCounterText;
+var tileHealthText;
 
 // Keyboard cursors
 var cursors;
@@ -63,6 +66,9 @@ function createMap(opt) {
         var self = this;
         setTimeout(function() {
             map = game.add.tilemap('level1');
+            // see functions below
+            map.breakTile = breakTile;
+            map.damageTile = damageTile;
             map.addTilesetImage('tiles-1');
             map.addTilesetImage('RPGpack_sheet');
             map.setCollisionByExclusion([
@@ -202,24 +208,53 @@ function createButton(x, y, z, cb) {
 }
 
 
-function breakTile(tile, x, y) {
-    if (!crumblingSound.isPlaying)
-        crumblingSound.play();
-    particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
-    map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
-    gm.breakTile(x, player.y + y)
-    
-    
-    gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
-    breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
-    docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+function damageTile(x, y, tile, fromGM) {
+    map.damagedTiles = map.damagedTiles || {};
+    var key = x + '-' + y;
+    var health = map.damagedTiles[key] || gm.config.game.defaultTileHealth;
+    health = health - 1;
+    tileHealthText.text = 'Tile Health: ' + health;
+    map.damagedTiles[key] = health;
+    // late night math to only allow 0.7 % in alpha drop
+    tile.alpha = (((health / gm.config.game.defaultTileHealth) * 70) + 30) / 100;
+    layer.dirty = true;
+    if (!fromGM)
+        gm.damageTile(x, y);
+    return health;
 }
+
+var breakDelay = 0;
+function breakTile(tile, x, y) {
+    //debugger;
+    if (!(game.time.now - breakDelay > gm.config.game.defaultBreakDelay)) return;
+    breakDelay = game.time.now;
+    var health = damageTile(tile.worldX, tile.worldY, tile);
+    console.log('x', x, 'y', y, 'health', health)
+    if (!crumblingSound.isPlaying) {
+            crumblingSound.play();
+    }
+    particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
+    if (health <= 0) {
+
+        
+        map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+        gm.breakTile(x, player.y + y)
+        
+        
+        gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
+        breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
+        docCookies.setItem('breakCounter', gm.config.game.breakCounter);
+    }
+}
+
 
 function jumpTouchButton() {
     function jumpUp() {
         if (inWater)  player.body.velocity.y = -150;
         else  player.body.velocity.y = -250;
         jumpTimer = game.time.now + 750;
+        jumping = true;
+        jumpMoveDelay =  game.time.now + gm.config.game.jumpMsgDelay;
         gm.movePlayer(player, {
             idle: facing === 'idle'
         });
@@ -342,6 +377,11 @@ function create() {
     breakCounterText = game.add.text(16, 16, gm.config.game.breakCounter + ' Tiles Busted', style);
     breakCounterText.fixedToCamera = true;
     
+    breakCounterText = game.add.text(16, 16, gm.config.game.breakCounter + ' Tiles Busted', style);
+    breakCounterText.fixedToCamera = true;
+    tileHealthText = game.add.text(16, 64, 'Tile Health: 0', style);
+    tileHealthText.fixedToCamera = true;
+    
     levelText = game.add.text(16, 32, gm.config.game.level, style);
     levelText.fixedToCamera = true;
     
@@ -369,12 +409,9 @@ function create() {
     createMap({load: true});
     
     player = gm.createPlayer();
-    game.physics.enable(player, Phaser.Physics.ARCADE);
-    
-    player.body.bounce.y = gm.config.game.player.bounceY;
+
     player.body.collideWorldBounds = true;
     player.body.setSize(20, 32, 5, 16);
-
     game.camera.follow(player);
 
     cursors = game.input.keyboard.createCursorKeys();
@@ -458,7 +495,7 @@ function update() {
 
     // TODO fix hack
     if (!player || !player.body) return;
-    mpsText.text = String(chat.mq.mps + ' m/s');
+    mpsText.text = String(chat.mq.mps + ' msg/s');
 
     player.body.velocity.x = 0;
 
@@ -467,12 +504,14 @@ function update() {
         //testTouch(leftJumpTouch)
         ) {
         movePlayerLeft();
+        playerMoved = true;
     }
     else if (stickRight() || cursors.right.isDown //||
         //testTouch(rightTouch) ||
         //testTouch(rightJumpTouch)
         ) {
         movePlayerRight();
+        playerMoved = true;
     }
     else {
         if (facing != 'idle') {
@@ -507,7 +546,18 @@ function update() {
     }
     //inWater = water.worldPosition.y < player.worldPosition.y;
     //if (inWater) speed = 100;
-    
+
+    if (jumping && player.body.onFloor()) {
+        jumping = false;
+        console.log('player landed on floor')
+        gm.movePlayer(player, {
+            idle: facing === 'idle'
+        });
+    } else if (jumping && !playerMoved) {
+        gm.movePlayer(player, {
+            idle: facing === 'idle'
+        });
+    }
     if (stickUp() ||
         jumpButton.isDown ||
         testTouch(jumpTouch) 
@@ -517,6 +567,7 @@ function update() {
         ) {
         jumpTouchButton();
     }
+
 
     if (breakButton.isDown || testTouch(breakTouch) 
         //|| testTouch(breakActionTouch)
