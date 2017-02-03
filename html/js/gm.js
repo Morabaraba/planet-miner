@@ -160,7 +160,6 @@ GameMaster.prototype.chatPlayer = function(msg) {
     );
 }
 
-
 GameMaster.prototype.actionPlayer = function(msg) {
     var self = this;
     if (!msg) {
@@ -176,7 +175,6 @@ GameMaster.prototype.actionPlayer = function(msg) {
     }
     particleBurst(player, facing === 'left' ? player.width : 0);
 }
-
 
 GameMaster.prototype.breakTile = function(x, y) {
     var self = this;
@@ -219,8 +217,6 @@ GameMaster.prototype.updatePlayer = function(msg) {
     player.y = msg.y;
     player.body.velocity.x = msg.body.velocity.x;
     player.body.velocity.y = msg.body.velocity.y;
-
-
 
 }
 

@@ -243,10 +243,21 @@ function breakTile(tile, x, y) {
     particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
     if (health <= 0) {
 
-        
         map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
         gm.breakTile(x, player.y + y)
         
+        var diamond = game.add.sprite(tile.worldX, tile.worldY, 'diamond');
+        diamond.width = 12;
+        diamond.height = 12;
+        game.physics.enable(diamond, Phaser.Physics.ARCADE);
+        game.physics.arcade.collide(diamond, layer);
+        diamond.body.bounce.y = gm.config.game.player.bounceY;
+        //  This gets it moving
+        diamond.body.velocity.setTo(
+            (game.rnd.integerInRange(100, 300) * (game.rnd.frac() > 0.5 ? -1 : 1)) , 
+            -1 * game.rnd.integerInRange(100, 300)
+        );
+
         
         gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
         breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';

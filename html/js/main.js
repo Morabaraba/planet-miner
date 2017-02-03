@@ -206,7 +206,7 @@ chat.mq.onMessageArrived = function(message) {
                 if (!map) {
                     gm.config.game.map.damagedTiles = data;
                 } else {
-                    gm.damageTiles(data)
+                    gm.damageTiles(data);
                 }
             } else {
                 console.log('Ignoring RSPDAMAGE', msg);
