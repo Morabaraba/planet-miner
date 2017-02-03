@@ -24,7 +24,7 @@ chat.Message = function(text) {
         clientId: chat.config.clientId,
         text: text,
         type: this.types.MESSAGE,
-        trust: true    
+        trust: true
     };
     if (text instanceof Object) {
         msg.text = undefined;
@@ -50,7 +50,7 @@ chat.Message.prototype.mqtt = function(topic) {
     //console.log(encodedData);
     var message = new Paho.MQTT.Message(encodedData);
     message.qos = qos;
-    message.destinationName = topic || buildTopic();
+    message.destinationName = topic || this.msg.topic || buildTopic();
     //console.log(message.payloadBytes);
     return message;    
 };
@@ -61,8 +61,11 @@ chat.Message.prototype.types = {
     CREATE: 'crt',
     ACTION: 'act',
     BREAK : 'brk',
-    DAMAGE : 'dmg'
+    DAMAGE : 'dmg',
+    REQDAMAGE : 'rqd',
+    RSPDAMAGE : 'rpd'
 }
+
 // TODO HACK HACK HHACK
 chat.Message.types  = chat.Message.prototype.types 
 chat.MessageList = Array;
@@ -92,10 +95,11 @@ chat.mq.init = function() {
 chat.mq.onConnect = function() {
     // Once a connection has been made, make a subscription and send a message.
     var topic = buildTopic();
-    console.log('on Connect, topic', topic)
+    console.log('Connected, subscribing to', topic)
     chat.mq.client.subscribe(topic);
-    //var message = new chat.Message("has entered " + chat.config.topic + ".");
-    //chat.mq.client.send(message.mqtt());
+    
+    var message = new chat.Message({type: chat.Message.types.REQDAMAGE});
+    chat.mq.client.send(message.mqtt());
     
     
 }
@@ -110,7 +114,7 @@ chat.mq.onFailure = function() {
 /** @memberof! chat# */
 // called when the client loses its connection
 chat.mq.onConnectionLost = function(responseObject) {
-    console.log('On Connection Lost', arguments)
+    console.error('On Connection Lost', responseObject.errorMessage, responseObject)
     if (responseObject.errorCode !== 0) {
         chat.vm.addMessage(new chat.Message(
             responseObject.errorMessage
@@ -136,7 +140,7 @@ chat.mq.onMessageArrived = function(message) {
         if (msg.clientId == gm.currentSessionId()) return;
         
         chat.vm.addMessage(new chat.Message(msg))
-        gm.chatPlayer(msgObj);
+        gm.chatPlayer(msg);
         gm.showChat(false)
     } else
     if (msg.type ==  chat.Message.types.MOVE) {
@@ -148,9 +152,8 @@ chat.mq.onMessageArrived = function(message) {
         }
     } else 
     if (msg.type == chat.Message.types.ACTION) {
-        var msgObj = msg;
-        if (msgObj.clientId != chat.config.clientId) {
-            gm.actionPlayer(msgObj)
+        if (msg.clientId != chat.config.clientId) {
+            gm.actionPlayer(msg)
         }
     } else 
     if (msg.type == chat.Message.types.BREAK) {
@@ -167,7 +170,50 @@ chat.mq.onMessageArrived = function(message) {
                 map.damageTile(tile.worldX, tile.worldY, tile, true, msg.health);
             }
         }
-    } else {
+    } else
+    if (msg.type == chat.Message.types.REQDAMAGE) {
+        if (msg.clientId != chat.config.clientId) {
+            if (!msg.fromClientId) {
+                var msg = {
+                    type:  chat.Message.types.RSPDAMAGE,
+                    toClientId: msg.clientId
+                };
+                chat.mq.send(msg);
+            } else
+            if (msg.fromClientId === chat.config.clientId) {
+                var msg = {
+                    type:  chat.Message.types.RSPDAMAGE,
+                    topic: msg.toTopic,
+                    data: msgpack.encode(map.damagedTiles)
+                };
+                chat.mq.send(msg);
+            }
+        }
+    } else 
+    if (msg.type == chat.Message.types.RSPDAMAGE) {
+        if (msg.clientId != chat.config.clientId) {
+            if (msg.toClientId === chat.config.clientId) {
+                var topic = buildTopic() + '.' + chat.config.clientId;
+                chat.mq.client.subscribe(topic);
+                var msg = {
+                    type:  chat.Message.types.REQDAMAGE,
+                    fromClientId: msg.clientId,
+                    toTopic: topic
+                };
+                chat.mq.send(msg);
+            } else if (msg.data) {
+                var data = msgpack.decode(msg.data);
+                if (!map) {
+                    gm.config.game.map.damagedTiles = data;
+                } else {
+                    gm.damageTiles(data)
+                }
+            } else {
+                console.log('Ignoring RSPDAMAGE', msg);
+            }
+        }
+    } else 
+    {
         var textMsg = 'Something unknown is happening.';
         console.error(textMsg + ' Unknown message type received.', msg)
         chat.vm.addMessage(new chat.Message(textMsg, 'msg', true));
@@ -183,7 +229,7 @@ chat.mq.send = function(text) {
                 // statements to handle any exceptions
                 var textMsg = 'Sending of MQTT Data failed.';
                 console.error(textMsg, e); // pass exception object to error handler
-                chat.vm.addMessage(new chat.Message(textMsg, 'msg', true));
+                //chat.vm.addMessage(new chat.Message(textMsg, 'msg', true));
             }
     }
     var msg = new chat.Message(text);

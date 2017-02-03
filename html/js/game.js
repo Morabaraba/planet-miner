@@ -66,6 +66,7 @@ function createMap(opt) {
         var self = this;
         setTimeout(function() {
             map = game.add.tilemap('level1');
+
             // see functions below
             map.breakTile = breakTile;
             map.damageTile = damageTile;
@@ -83,6 +84,11 @@ function createMap(opt) {
             layer.resizeWorld();
             game.world.setChildIndex(layer, 1)
             levelText.text = gm.config.game.level;
+            
+            if (gm.config.game.map.damagedTiles) {
+                gm.damageTiles(gm.config.game.map.damagedTiles) 
+            }
+            
             root.gm.showGameScreen()
             game.paused = false;
         }, 100)
@@ -210,7 +216,7 @@ function createButton(x, y, z, cb) {
 
 function damageTile(x, y, tile, fromGM, health) {
     map.damagedTiles = map.damagedTiles || {};
-    var key = x + '-' + y;
+    var key = tile.x + '-' + tile.y;
     if (!health)
         health = map.damagedTiles[key] || gm.config.game.defaultTileHealth;
     health = health - 1;

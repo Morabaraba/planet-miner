@@ -299,10 +299,30 @@ function Sim() {
     }    
 }
 
+GameMaster.prototype.damageTiles = function(data) {
+    map.damagedTiles = data;
+    _.keys(map.damagedTiles).forEach(function (key) {
+        var health = map.damagedTiles[key];
+        var keyXY = key.split('-');
+        var x = Number(keyXY[0]), y = Number(keyXY[1]);
+        
+        var tile = map.getTile(x, y) ;
+        if (health <= 0) {
+            map.removeTile(x, y)
+        }
+        else
+        {
+            tile.alpha = (((health / gm.config.game.defaultTileHealth) * 70) + 30) / 100; 
+        }
+    });
+    layer.dirty = true;
+}
+
 Sim.prototype.addAction = function(action, opt) {
     var self = this;
     self.queueCollecting.push({time: Date.now(), action: action, opt: opt});
 }
+
 
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -311,3 +331,4 @@ if (typeof module !== 'undefined' && module.exports) {
     root.gm = new GameMaster(GameMasterConfig);
     root.gm.game = startGame(); 
 }
+

@@ -23,7 +23,7 @@ gm.config = {
         level: 'levels/level2.json',
         defaultTileHealth : 4,
         defaultBreakDelay : 300,
-        
+        map: {}, // TODO
         breakCounter: 0 // because deon
     },
     mqtt: mqtt,
