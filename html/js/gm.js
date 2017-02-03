@@ -181,6 +181,15 @@ GameMaster.prototype.breakTile = function(x, y) {
     chat.mq.send({type: 'brk', x: x, y: y});
 }
 
+GameMaster.prototype.createDiamond = function(tile, sprite) {
+    var msg = {
+        type: '$$$',
+        tile : { x : tile.x, y : tile.y },
+        body: { velocity: { x : sprite.body.velocity.x, y : sprite.body.velocity.y } }
+    }
+    chat.mq.send(msg);
+}
+
 GameMaster.prototype.damageTile = function(x, y, health) {
     var self = this;
     chat.mq.send({type: 'dmg', x: x, y: y, health: health});

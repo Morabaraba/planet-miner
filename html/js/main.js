@@ -63,7 +63,9 @@ chat.Message.prototype.types = {
     BREAK : 'brk',
     DAMAGE : 'dmg',
     REQDAMAGE : 'rqd',
-    RSPDAMAGE : 'rpd'
+    RSPDAMAGE : 'rpd',
+    DIAMOND: '$$$',
+    MYDIAMOND: 'my$'
 }
 
 // TODO HACK HACK HHACK
@@ -100,7 +102,6 @@ chat.mq.onConnect = function() {
     
     var message = new chat.Message({type: chat.Message.types.REQDAMAGE});
     chat.mq.client.send(message.mqtt());
-    
     
 }
 // called when the client connects
@@ -171,9 +172,16 @@ chat.mq.onMessageArrived = function(message) {
             }
         }
     } else
+    if (msg.type == chat.Message.types.DIAMOND) {
+        if (msg.clientId != chat.config.clientId) {
+            var tile = map.getTile(msg.tile.x, msg.tile.y);
+            createDiamond(tile, msg.body.velocity);
+        }
+    } else
     if (msg.type == chat.Message.types.REQDAMAGE) {
         if (msg.clientId != chat.config.clientId) {
-            if (!msg.fromClientId) {
+            // if the request is not for a specific client and we have the damage data send it to other client
+            if (!msg.fromClientId && map.damagedTiles) {
                 var msg = {
                     type:  chat.Message.types.RSPDAMAGE,
                     toClientId: msg.clientId
@@ -181,6 +189,10 @@ chat.mq.onMessageArrived = function(message) {
                 chat.mq.send(msg);
             } else
             if (msg.fromClientId === chat.config.clientId) {
+                if (!map.damagedTiles) {
+                    console.error('No Damage Data, Why does ', msg.clientId, 'want damage data from us?');
+                    return;
+                }
                 var msg = {
                     type:  chat.Message.types.RSPDAMAGE,
                     topic: msg.toTopic,
