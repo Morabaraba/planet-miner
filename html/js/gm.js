@@ -143,6 +143,7 @@ GameMaster.prototype.movePlayer = function(player, opts) {
 
 GameMaster.prototype.chatPlayer = function(msg) {
     var self = this;
+    console.log('Player chat', msg)
     var player = self.players[msg.clientId];
     if (!player) {
         console.error('no player found', msg);
@@ -151,10 +152,10 @@ GameMaster.prototype.chatPlayer = function(msg) {
     }
     //if (msg.text.length > 256)
     //    substring
-    player.text.text = player.opts.clientId + ': ' + msg.text;
+    player.text.text = msg.clientId + ': ' + msg.text;
     if (player.timeoutID) window.clearTimeout(player.timeoutID);
     player.timeoutID = window.setTimeout(function() {
-        player.text.text = player.opts.clientId    
+        player.text.text = msg.clientId    
     }, 15 * 1000 // 15 sec
     );
 }
@@ -182,9 +183,9 @@ GameMaster.prototype.breakTile = function(x, y) {
     chat.mq.send({type: 'brk', x: x, y: y});
 }
 
-GameMaster.prototype.damageTile = function(x, y) {
+GameMaster.prototype.damageTile = function(x, y, health) {
     var self = this;
-    chat.mq.send({type: 'dmg', x: x, y: y});
+    chat.mq.send({type: 'dmg', x: x, y: y, health: health});
 }
 
 GameMaster.prototype.updatePlayer = function(msg) {

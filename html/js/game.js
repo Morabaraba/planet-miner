@@ -208,10 +208,11 @@ function createButton(x, y, z, cb) {
 }
 
 
-function damageTile(x, y, tile, fromGM) {
+function damageTile(x, y, tile, fromGM, health) {
     map.damagedTiles = map.damagedTiles || {};
     var key = x + '-' + y;
-    var health = map.damagedTiles[key] || gm.config.game.defaultTileHealth;
+    if (!health)
+        health = map.damagedTiles[key] || gm.config.game.defaultTileHealth;
     health = health - 1;
     tileHealthText.text = 'Tile Health: ' + health;
     map.damagedTiles[key] = health;
@@ -219,7 +220,7 @@ function damageTile(x, y, tile, fromGM) {
     tile.alpha = (((health / gm.config.game.defaultTileHealth) * 70) + 30) / 100;
     layer.dirty = true;
     if (!fromGM)
-        gm.damageTile(x, y);
+        gm.damageTile(x, y, health);
     return health;
 }
 

@@ -43,10 +43,13 @@ function buildTopic() {
 
 // convert a Message to a Paho Mqtt message
 chat.Message.prototype.mqtt = function(topic) {
-    console.log(this.msg);
+    var qos = 0;
+    if (this.msg.type === chat.Message.types.BREAK || this.msg.type === chat.Message.types.DAMAGE) qos = 2;
+    console.log('Msg Created QOS', qos, this.msg.type, (this.msg.type === chat.Message.types.MESSAGE ? this.msg.text : ''));
     var encodedData = msgpack.encode(this.msg);
     //console.log(encodedData);
     var message = new Paho.MQTT.Message(encodedData);
+    message.qos = qos;
     message.destinationName = topic || buildTopic();
     //console.log(message.payloadBytes);
     return message;    
@@ -99,6 +102,7 @@ chat.mq.onConnect = function() {
 // called when the client connects
 chat.mq.onFailure = function() {
     // Once a connection has been made, make a subscription and send a message.
+    console.log('On Failure', arguments)
     chat.vm.addMessage(new chat.Message(
         JSON.stringify(arguments)
     ));
@@ -106,6 +110,7 @@ chat.mq.onFailure = function() {
 /** @memberof! chat# */
 // called when the client loses its connection
 chat.mq.onConnectionLost = function(responseObject) {
+    console.log('On Connection Lost', arguments)
     if (responseObject.errorCode !== 0) {
         chat.vm.addMessage(new chat.Message(
             responseObject.errorMessage
@@ -126,7 +131,7 @@ chat.mq.onMessageArrived = function(message) {
     }
     
     var msg = msgpack.decode(message.payloadBytes)
-    
+    console.log('Msg Arrived', msg.type , msg.clientId)
     if (msg.type == chat.Message.types.MESSAGE) {
         if (msg.clientId == gm.currentSessionId()) return;
         
@@ -159,7 +164,7 @@ chat.mq.onMessageArrived = function(message) {
         if (msg.clientId != chat.config.clientId) {
             var tile = map.getTileWorldXY(msg.x, msg.y);
             if (tile) {
-                map.damageTile(tile.worldX, tile.worldY, tile, true);
+                map.damageTile(tile.worldX, tile.worldY, tile, true, msg.health);
             }
         }
     } else {
