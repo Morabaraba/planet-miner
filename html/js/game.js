@@ -256,7 +256,7 @@ function jumpTouchButton() {
         jumping = true;
         jumpMoveDelay =  game.time.now + gm.config.game.jumpMsgDelay;
         gm.movePlayer(player, {
-            idle: facing === 'idle'
+            idle: facing === 'idle',
         });
     }
     if (player.body.onFloor() && game.time.now > jumpTimer || inWater) {
@@ -277,7 +277,7 @@ function movePlayerLeft() {
         facing = 'left';
     }
     gm.movePlayer(player, {
-        idle: facing === 'idle'
+        idle: facing === 'idle',
     });
 }
 
@@ -289,7 +289,7 @@ function movePlayerRight() {
         facing = 'right';
     }
     gm.movePlayer(player, {
-        idle: facing === 'idle'
+        idle: facing === 'idle',
     });
 }
 
@@ -499,17 +499,24 @@ function update() {
 
     player.body.velocity.x = 0;
 
-    if (stickLeft() || cursors.left.isDown //||
-        //testTouch(leftTouch) ||
-        //testTouch(leftJumpTouch)
-        ) {
+    if (jumping && player.body.onFloor()) {
+        jumping = false;
+        console.log('player landed on floor')
+        gm.movePlayer(player, {
+            idle: facing === 'idle'
+        });
+    }
+    if (stickUp() ||
+        jumpButton.isDown ||
+        testTouch(jumpTouch) ) {
+        jumpTouchButton();
+    }
+    
+    if (stickLeft() || cursors.left.isDown ) {
         movePlayerLeft();
         playerMoved = true;
     }
-    else if (stickRight() || cursors.right.isDown //||
-        //testTouch(rightTouch) ||
-        //testTouch(rightJumpTouch)
-        ) {
+    else if (stickRight() || cursors.right.isDown ) {
         movePlayerRight();
         playerMoved = true;
     }
@@ -534,6 +541,12 @@ function update() {
         }
     }
 
+    if (jumping && !playerMoved) {
+        gm.movePlayer(player, {
+            idle: facing === 'idle'
+        });
+    }
+    
     if (actionButton.isDown ||
         testTouch(actionTouch)
         //||
@@ -544,29 +557,11 @@ function update() {
     else {
         speed = normalSpeed;
     }
+    // TODO fix water
     //inWater = water.worldPosition.y < player.worldPosition.y;
     //if (inWater) speed = 100;
 
-    if (jumping && player.body.onFloor()) {
-        jumping = false;
-        console.log('player landed on floor')
-        gm.movePlayer(player, {
-            idle: facing === 'idle'
-        });
-    } else if (jumping && !playerMoved) {
-        gm.movePlayer(player, {
-            idle: facing === 'idle'
-        });
-    }
-    if (stickUp() ||
-        jumpButton.isDown ||
-        testTouch(jumpTouch) 
-        //||
-        //testTouch(leftJumpTouch) ||
-        //testTouch(rightJumpTouch)
-        ) {
-        jumpTouchButton();
-    }
+
 
 
     if (breakButton.isDown || testTouch(breakTouch) 

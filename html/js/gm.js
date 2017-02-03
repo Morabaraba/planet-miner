@@ -89,6 +89,10 @@ GameMaster.prototype.createPlayer = function(msg) {
     if (self.players[msg.clientId]) return;
     
     var player = game.add.sprite(32, 32, 'dude');
+    if (!msg.body) {
+        if (msg.x) player.x = msg.x;
+        if (msg.y) player.y = msg.y
+    }
     
     var style = { font: "16px Arial", fill: "#ffffff", width: "480px", wordWrap: true, height: "230px"};
     var text = game.add.text(0, 0, msg.clientId, style);
@@ -116,12 +120,22 @@ GameMaster.prototype.currentSessionId = function() {
     return gm.config.chat.clientId //+ '-' + gm.config.game.player.nick;
 }
 
+var moveDelay;
 GameMaster.prototype.movePlayer = function(player, opts) {
+    if (player.body.velocity.x == 0 /*&& player.body.velocity.y == 0*/) moveDelay = game.time.now;
+    if (moveDelay > game.time.now) return;
+    moveDelay = game.time.now + 200;
     opts = opts || {};
     var msg = {
         type: 'mov',
         x: player.x,
         y: player.y,
+        body: { 
+            velocity: {
+                x: player.body.velocity.x, 
+                y: player.body.velocity.y
+            }
+        }
     };
     msg = _.assignIn(msg, opts);
     chat.mq.send(msg);
@@ -194,15 +208,19 @@ GameMaster.prototype.updatePlayer = function(msg) {
         {
             player.frame = 5;
         }
-    //} else if (player.x === msg.x) {
-        // nothing
     } else if (player.x < msg.x) {
         player.animations.play('right');    
     } else {
         player.animations.play('left')
     }
+
     player.x = msg.x;
     player.y = msg.y;
+    player.body.velocity.x = msg.body.velocity.x;
+    player.body.velocity.y = msg.body.velocity.y;
+
+
+
 }
 
 
