@@ -68,6 +68,7 @@ GameMaster.prototype.loadConfig = function() {
     self.config.game.player.nick = docCookies.getItem('nick' ) || self.config.game.player.nick;
     self.config.game.level = docCookies.getItem('level' ) || self.config.game.level;
     self.config.game.breakCounter = docCookies.getItem('breakCounter' ) || self.config.game.breakCounter;
+    self.config.game.diamondCounter = docCookies.getItem('diamondCounter' ) || self.config.game.diamondCounter;
 }
 
 GameMaster.prototype.actions = {
@@ -176,6 +177,11 @@ GameMaster.prototype.actionPlayer = function(msg) {
     particleBurst(player, facing === 'left' ? player.width : 0);
 }
 
+GameMaster.prototype.takeDiamond = function(gameId) {
+    var self = this;
+    chat.mq.send({type: 'my$', gameId: gameId});
+}
+
 GameMaster.prototype.breakTile = function(x, y) {
     var self = this;
     chat.mq.send({type: 'brk', x: x, y: y});
@@ -183,6 +189,7 @@ GameMaster.prototype.breakTile = function(x, y) {
 
 GameMaster.prototype.createDiamond = function(tile, sprite) {
     var msg = {
+        gameId: sprite.gameId,
         type: '$$$',
         tile : { x : tile.x, y : tile.y },
         body: { velocity: { x : sprite.body.velocity.x, y : sprite.body.velocity.y } }

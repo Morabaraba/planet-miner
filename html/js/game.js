@@ -230,19 +230,44 @@ function damageTile(x, y, tile, fromGM, health) {
     return health;
 }
 
+function takeDiamond(gameId, fromGM) {
+    sprite = map.diamonds[gameId];
+    if (!sprite) {
+        console.error('Could not take diamond', gameId);
+        // fail silently
+        return;
+    }
+    sprite.destroy();
+    map.diamonds[gameId] = undefined;
+    delete map.diamonds[gameId];
+    
+    gm.config.game.diamondCounter = Number(gm.config.game.diamondCounter) + 1;
+    diamondCounterText.text  = gm.config.game.diamondCounter + ' Diamonds';
+    docCookies.setItem('diamondCounter', gm.config.game.breakCounter);
+    if (!fromGM) {
+        gm.takeDiamond(gameId)
+    }
+}
+
 // var diamonds = [];
-function createDiamond(tile, velocity) {
-    map.diamonds = map.diamonds || [];
+function createDiamond(tile, msg) {
+    map.diamonds = map.diamonds || {};
     var diamond = game.add.sprite(tile.worldX, tile.worldY, 'diamond');
-    map.diamonds.push(diamond);
+    if (msg) {
+        var gameId = msg.gameId;
+    } else {
+        var gameId = game.time.now + '-' + game.rnd.integer();
+    }
+    diamond.gameId = gameId;
+    map.diamonds[gameId] = diamond;
     diamond.width = 12;
     diamond.height = 12;
     game.physics.enable(diamond, Phaser.Physics.ARCADE);
     game.physics.arcade.collide(diamond, layer);
     diamond.body.bounce.y = gm.config.game.player.bounceY;
     //  This gets it moving
-    if (velocity) {
-        diamond.body.velocity.setTo(velocity.x, velocity.y);
+    if (msg) {
+        diamond.body.velocity.setTo(msg.body.velocity.x, msg.body.velocity.y);
     } else {
         // if the diamond does not have a velocity we must create it and tell the gm
         diamond.body.velocity.setTo(
@@ -403,20 +428,22 @@ function create() {
     ui = game.add.group();
     
     var style = { font: "16px Arial", fill: "#ffffff"};
-    breakCounterText = game.add.text(16, 16, gm.config.game.breakCounter + ' Tiles Busted', style);
-    breakCounterText.fixedToCamera = true;
     
     breakCounterText = game.add.text(16, 16, gm.config.game.breakCounter + ' Tiles Busted', style);
     breakCounterText.fixedToCamera = true;
-    tileHealthText = game.add.text(16, 64, 'Tile Health: 0', style);
-    tileHealthText.fixedToCamera = true;
     
     levelText = game.add.text(16, 32, gm.config.game.level, style);
     levelText.fixedToCamera = true;
     
     mpsText = game.add.text(16, 48, '0', style);
     mpsText.fixedToCamera = true;
+    
+    tileHealthText = game.add.text(16, 64, 'Tile Health: 0', style);
+    tileHealthText.fixedToCamera = true;
 
+    diamondCounterText = game.add.text(16, 80, gm.config.game.diamondCounter + ' Diamonds', style);
+    diamondCounterText.fixedToCamera = true;
+    
     helpText = game.add.text(256, 64, ''
         + 'Desktop:\n\n'
         + 'Use the <ARROW KEYS> to move\n' 
@@ -524,6 +551,9 @@ function update() {
 
     _.values(map.diamonds).forEach(function(diamond) {
         game.physics.arcade.collide(diamond, layer);
+        if (game.physics.arcade.collide(diamond, player)) {
+            takeDiamond(diamond.gameId);
+        }
     })
 
     // TODO fix hack

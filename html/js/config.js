@@ -24,7 +24,8 @@ gm.config = {
         defaultTileHealth : 4,
         defaultBreakDelay : 300,
         map: {}, // TODO
-        breakCounter: 0 // because deon
+        breakCounter: 0, // because deon
+        diamondCounter: 0 // because marnus
     },
     mqtt: mqtt,
     chat: {
