@@ -15,14 +15,23 @@ gm.config = {
         physicsSystem: Phaser.Physics.ARCADE,
         backgroundColor: '#000000',
         player: {
+            x: 128,
+            y: 128,
             nick : nick,
             bounceY: 0.2,
             normalSpeed: 200,
             superSpeed: 300,
+            moveDelay: 500,
+        },
+        audio: {
+            enabled: false,
+            music: 0,
+            sound: 1,
+            volume: 0
         },
         level: 'levels/level2.json',
-        defaultTileHealth : 4,
-        defaultBreakDelay : 300,
+        defaultTileHealth : 3,
+        defaultBreakDelay : 200,
         map: {}, // TODO
         breakCounter: 0, // because deon
         diamondCounter: 0 // because marnus

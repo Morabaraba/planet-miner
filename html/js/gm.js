@@ -60,12 +60,18 @@ GameMaster.prototype.saveConfig = function() {
     docCookies.setItem('nick', self.config.game.player.nick);
     docCookies.setItem('level', self.config.game.level);
     docCookies.setItem('breakCounter', self.config.game.breakCounter);
+    if (gm.player) {
+        docCookies.setItem('playerx', gm.player.body.x);
+        docCookies.setItem('playery', gm.player.body.y);
+    }
 }
 
 GameMaster.prototype.loadConfig = function() {
     var self = this;
     self.config.chat.clientId = docCookies.getItem('clientId' ) || self.config.chat.clientId;
     self.config.game.player.nick = docCookies.getItem('nick' ) || self.config.game.player.nick;
+    self.config.game.player.x = docCookies.getItem('playerx' ) || self.config.game.player.x;
+    self.config.game.player.y = docCookies.getItem('playery' ) || self.config.game.player.y;
     self.config.game.level = docCookies.getItem('level' ) || self.config.game.level;
     self.config.game.breakCounter = docCookies.getItem('breakCounter' ) || self.config.game.breakCounter;
     self.config.game.diamondCounter = docCookies.getItem('diamondCounter' ) || self.config.game.diamondCounter;
@@ -83,18 +89,25 @@ GameMaster.prototype.movePlayerRight = function() {
     var self = this;
     //self.sim.addAction(self.actions.MOVE, )
 }
+
 GameMaster.prototype.createPlayer = function(msg) {
     var self = this;
     //self.sim.addAction(self.actions.MOVE, )
     msg = msg || {clientId : self.currentSessionId()};
-    if (self.players[msg.clientId]) return;
+    if (self.players[msg.clientId]) return self.players[msg.clientId];
+
+    var x = 128;
+    var y = 128;
+    var localPlayer = msg.clientId === self.currentSessionId();
+    if (localPlayer) {
+        x = gm.config.game.player.x || x;
+        y = gm.config.game.player.y || y;
+    } 
     
-    var player = game.add.sprite(32, 32, 'dude');
-    if (!msg.body) {
-        if (msg.x) player.x = msg.x;
-        if (msg.y) player.y = msg.y
-    }
-    
+    var player = game.add.sprite(Number(x), Number(y), 'dude');
+    if (localPlayer) gm.player = player;
+    console.log('player created x y', msg.clientId, player.x, player.y)
+
     var style = { font: "16px Arial", fill: "#ffffff", width: "480px", wordWrap: true, height: "230px"};
     var text = game.add.text(0, 0, msg.clientId, style);
     //text.anchor.x = 0.5;
@@ -107,14 +120,32 @@ GameMaster.prototype.createPlayer = function(msg) {
     player.animations.add('left', [0, 1, 2, 3], 10, true);
     player.animations.add('turn', [4], 20, true);
     player.animations.add('right', [5, 6, 7, 8], 10, true);
-    
-    self.players[msg.clientId] = player;
-    
+
     game.physics.enable(player, Phaser.Physics.ARCADE);
     player.body.bounce.y = gm.config.game.player.bounceY;
+
+    if (!msg.body) {
+        if (msg.x) player.x = msg.x;
+        if (msg.y) player.y = msg.y
+    }
     
+    self.players[msg.clientId] = player;
+
     chat.mq.send({type: 'crt'});
     return player;
+}
+
+GameMaster.prototype.destroyPlayer = function(msg) {
+    if (msg.clientId === chat.config.clientId) return;
+    var player = this.players[msg.clientId];
+    if (!player) {
+        console.log('could not find player', msg.clientId, 'dropping destroy' );
+        return
+    }
+    player.text.destroy();
+    player.destroy();
+    //delete this.players[msg.clientId];
+    this.players[msg.clientId] = undefined;
 }
 
 GameMaster.prototype.currentSessionId = function() {
@@ -122,11 +153,22 @@ GameMaster.prototype.currentSessionId = function() {
 }
 
 var moveDelay;
+var oldMoveMsg;
 GameMaster.prototype.movePlayer = function(player, opts) {
-    if (player.body.velocity.x == 0 /*&& player.body.velocity.y == 0*/) moveDelay = game.time.now;
-    if (moveDelay > game.time.now) return;
-    moveDelay = game.time.now + 200;
+    // it there no player don't move it.
+    if (!player || !player.body) return; // into the ether you go
     opts = opts || {};
+    
+    // allow movement every x amount(delay movement)
+    if (player.body.velocity.x == 0) moveDelay = game.time.now;
+    
+    if (!opts.force && moveDelay > game.time.now) {
+        console.debug('move delay blocking msg')
+        return;
+    }
+    moveDelay = game.time.now + gm.config.game.moveDelay;
+    
+    // build msg
     var msg = {
         type: 'mov',
         x: player.x,
@@ -138,8 +180,31 @@ GameMaster.prototype.movePlayer = function(player, opts) {
             }
         }
     };
-    msg = _.assignIn(msg, opts);
+    /*
+    if (oldMoveMsg && oldMoveMsg.x == msg.x && oldMoveMsg.x == msg.x) {
+        console.debug('No movement, dropping msg')
+        return;
+    }
+    */
+    
+    // ignore why for gravity
+    /*if (!opts.force && oldMoveMsg && oldMoveMsg.body.velocity.x === msg.body.velocity.x 
+        // && oldMoveMsg.body.velocity.y === msg.body.velocity.y
+        && oldMoveMsg.y === msg.y
+        ) {
+        console.debug('No movement, dropping msg')
+        return;
+    }*/
+    
+    
+    // mix in our options
+    msg = _.extend(msg, opts);
+    oldMoveMsg = _.clone(msg);
+    // send it to our mq
     chat.mq.send(msg);
+    
+    docCookies.setItem('playerx', player.x);
+    docCookies.setItem('playery', player.y);
 }
 
 GameMaster.prototype.chatPlayer = function(msg) {
@@ -202,6 +267,7 @@ GameMaster.prototype.damageTile = function(x, y, health) {
     chat.mq.send({type: 'dmg', x: x, y: y, health: health});
 }
 
+var wallTouched
 GameMaster.prototype.updatePlayer = function(msg) {
     var self = this;
     if (msg.clientId === self.currentSessionId()) return;
@@ -213,23 +279,33 @@ GameMaster.prototype.updatePlayer = function(msg) {
         return;
     }
     if (msg.idle) {
-        var facing = player.animations.name;
+        var facing = msg.facing || player.animations.name;
         player.animations.stop();
         if (facing == 'left')
         {
             player.frame = 0;
         }
-        else
+        else if (facing == 'right')
         {
             player.frame = 5;
         }
-    } else if (player.x < msg.x) {
-        player.animations.play('right');    
     } else {
-        player.animations.play('left')
+        if (msg.facing) {
+            player.animations.play(msg.facing); 
+        } else
+        if (player.x < msg.x) {
+            player.animations.play('right');    
+        } else {
+            player.animations.play('left')
+        }
     }
-
-    player.x = msg.x;
+    
+    if (player.body.onWall() ) {
+        wallTouched = true;
+    } else if (!wallTouched){
+        player.x = msg.x;
+        wallTouched = false;
+    }
     player.y = msg.y;
     player.body.velocity.x = msg.body.velocity.x;
     player.body.velocity.y = msg.body.velocity.y;
@@ -311,8 +387,19 @@ function Sim() {
     }    
 }
 
-GameMaster.prototype.damageTiles = function(data) {
-    map.damagedTiles = data;
+GameMaster.prototype.loadData = function(data) {
+    map.damagedTiles = data.damagedTiles;
+
+    if (data.diamonds) {
+        data.diamonds.forEach(function(msg) {
+            console.debug('creating diamond', msg)
+            var tile;
+            if (msg.tile)
+                tile = map.getTile(msg.tile.x, msg.tile.y);
+            createDiamond(tile, msg);
+        })
+    }
+    
     _.keys(map.damagedTiles).forEach(function (key) {
         var health = map.damagedTiles[key];
         var keyXY = key.split('-');
@@ -320,10 +407,11 @@ GameMaster.prototype.damageTiles = function(data) {
         
         var tile = map.getTile(x, y) ;
         if (health <= 0) {
+            console.debug('removing tile', key)
             map.removeTile(x, y)
         }
         else
-        {
+        {   console.debug('set tile', key, 'health', health)
             tile.alpha = (((health / gm.config.game.defaultTileHealth) * 70) + 30) / 100; 
         }
     });

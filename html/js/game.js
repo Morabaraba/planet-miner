@@ -85,12 +85,17 @@ function createMap(opt) {
             game.world.setChildIndex(layer, 1)
             levelText.text = gm.config.game.level;
             
-            if (gm.config.game.map.damagedTiles) {
-                gm.damageTiles(gm.config.game.map.damagedTiles) 
+            if (gm.config.game.map.loadData) {
+                gm.loadData(gm.config.game.map.loadData) 
             }
             
-            root.gm.showGameScreen()
+            setTimeout(function() {
+                root.gm.showGameScreen()
+
+                game.physics.arcade.gravity.y = 250;
+            }, 100);
             game.paused = false;
+            game.physics.arcade.isPaused = false;
         }, 100)
 
     }
@@ -240,11 +245,12 @@ function takeDiamond(gameId, fromGM) {
     sprite.destroy();
     map.diamonds[gameId] = undefined;
     delete map.diamonds[gameId];
-    
-    gm.config.game.diamondCounter = Number(gm.config.game.diamondCounter) + 1;
-    diamondCounterText.text  = gm.config.game.diamondCounter + ' Diamonds';
-    docCookies.setItem('diamondCounter', gm.config.game.breakCounter);
+
     if (!fromGM) {
+        gm.config.game.diamondCounter = Number(gm.config.game.diamondCounter) + 1;
+        diamondCounterText.text  = gm.config.game.diamondCounter + ' Diamonds';
+        docCookies.setItem('diamondCounter', gm.config.game.breakCounter);
+        
         gm.takeDiamond(gameId)
     }
 }
@@ -252,7 +258,14 @@ function takeDiamond(gameId, fromGM) {
 // var diamonds = [];
 function createDiamond(tile, msg) {
     map.diamonds = map.diamonds || {};
-    var diamond = game.add.sprite(tile.worldX, tile.worldY, 'diamond');
+    if (tile) {
+        x = tile.worldX;
+        y = tile.worldY;
+    } else {
+        x = msg.x;
+        y = msg.y
+    }
+    var diamond = game.add.sprite(x, y, 'diamond');
     if (msg) {
         var gameId = msg.gameId;
     } else {
@@ -263,16 +276,20 @@ function createDiamond(tile, msg) {
     diamond.width = 12;
     diamond.height = 12;
     game.physics.enable(diamond, Phaser.Physics.ARCADE);
+    
+    diamond.body.bounce.y = gm.config.game.player.bounceY * 2;
+    diamond.body.friction.x = 50;
+    diamond.body.friction.y = 50;
+    //diamond.body.mass = 100;
     game.physics.arcade.collide(diamond, layer);
-    diamond.body.bounce.y = gm.config.game.player.bounceY;
     //  This gets it moving
     if (msg) {
         diamond.body.velocity.setTo(msg.body.velocity.x, msg.body.velocity.y);
     } else {
         // if the diamond does not have a velocity we must create it and tell the gm
         diamond.body.velocity.setTo(
-            (game.rnd.integerInRange(100, 300) * (game.rnd.frac() > 0.5 ? -1 : 1)) , 
-            -1 * game.rnd.integerInRange(100, 300)
+            (game.rnd.integerInRange(100, 400) * (game.rnd.frac() > 0.5 ? -1 : 1)) , 
+            -1 * game.rnd.integerInRange(100, 400)
         );
         gm.createDiamond(tile, diamond);
     }
@@ -285,12 +302,15 @@ function breakTile(tile, x, y) {
     breakDelay = game.time.now;
     var health = damageTile(tile.worldX, tile.worldY, tile);
     console.log('x', x, 'y', y, 'health', health)
-    if (!crumblingSound.isPlaying) {
-            crumblingSound.play();
+    if (gm.config.game.audio.enabled) {
+        if (!crumblingSound.isPlaying) {
+                crumblingSound.play();
+        }
     }
     particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
     if (health <= 0) {
-        createDiamond(tile)
+        if(game.rnd.integerInRange(0, 100) > 80)
+            createDiamond(tile)
         
         map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
         gm.breakTile(x, player.y + y)
@@ -311,6 +331,8 @@ function jumpTouchButton() {
         jumpMoveDelay =  game.time.now + gm.config.game.jumpMsgDelay;
         gm.movePlayer(player, {
             idle: facing === 'idle',
+            facing : facing,
+            jumping : jumping
         });
     }
     if (player.body.onFloor() && game.time.now > jumpTimer || inWater) {
@@ -332,6 +354,8 @@ function movePlayerLeft() {
     }
     gm.movePlayer(player, {
         idle: facing === 'idle',
+        facing: 'left',
+        jumping: jumping
     });
 }
 
@@ -344,6 +368,8 @@ function movePlayerRight() {
     }
     gm.movePlayer(player, {
         idle: facing === 'idle',
+        facing: 'right',
+        jumping: jumping
     });
 }
 
@@ -406,15 +432,17 @@ function preload() {
     game.load.atlas('arcade', 'images/arcade-joystick.png', 'js/arcade-joystick.json');
     
     // music and sound
-    game.load.audio('crumbling', ['sound/Crumbling.mp3']);
-    game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
+    if (gm.config.game.audio.enabled) {
+        game.load.audio('crumbling', ['sound/Crumbling.mp3']);
+        game.load.audio('spaceloop', ['sound/SpaceLoop.mp3']);
+    }
 }
 
 function create() {
     game.stage.disableVisibilityChange = true;
     
     game.physics.startSystem(Phaser.Physics.ARCADE);
-    game.physics.arcade.gravity.y = 250;
+    game.physics.arcade.isPaused = true;
     
     game.stage.backgroundColor = gm.config.game.backgroundColor;
     
@@ -530,13 +558,14 @@ function create() {
     
     crumblingSound = game.add.audio('crumbling');
     
-    music = game.add.audio('spaceloop');
-    music.loop = true
+    if (gm.config.game.audio.enabled) {
+        music = game.add.audio('spaceloop');
+        music.loop = true
     
-    // let the magic begin
-    music.play();
-    music.volume = 0.2;
-    
+        // let the magic begin
+        music.play();
+        music.volume = 0.2;
+    }
     game.world.setChildIndex(ui, game.world.children.length - 1);
     
 }
@@ -544,9 +573,12 @@ function create() {
 function update() {
     var playerMoved = false;
     _.values(gm.players).forEach(function(sprite) {
+        if (!sprite) return;
         game.physics.arcade.collide(sprite, layer);
-        sprite.text.x = Math.floor(sprite.x);
-        sprite.text.y = Math.floor(sprite.y);
+        if (sprite.text) {
+            sprite.text.x = Math.floor(sprite.x);
+            sprite.text.y = Math.floor(sprite.y);
+        }
     })
 
     _.values(map.diamonds).forEach(function(diamond) {
@@ -566,7 +598,9 @@ function update() {
         jumping = false;
         console.log('player landed on floor')
         gm.movePlayer(player, {
-            idle: facing === 'idle'
+            idle: facing === 'idle',
+            facing : facing,
+            jumping: jumping
         });
     }
     if (stickUp() ||
@@ -598,17 +632,23 @@ function update() {
             facing = 'idle';
 
             gm.movePlayer(player, {
-                idle: facing === 'idle'
+                idle: facing === 'idle',
+                facing : facing,
+                jumping: jumping
             });
-
+            playerMoved = true
         }
     }
-
+    
+    /*
     if (jumping && !playerMoved) {
         gm.movePlayer(player, {
-            idle: facing === 'idle'
+            idle: facing === 'idle',
+            facing : facing,
+            jumping: jumping
         });
     }
+    */
     
     if (actionButton.isDown ||
         testTouch(actionTouch)

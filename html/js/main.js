@@ -28,7 +28,7 @@ chat.Message = function(text) {
     };
     if (text instanceof Object) {
         msg.text = undefined;
-        msg = _.assignIn(msg, text);
+        msg = _.extend(msg, text);
     }
     this.text = m.prop(msg.text);
 };
@@ -59,13 +59,14 @@ chat.Message.prototype.types = {
     MESSAGE: 'msg',
     MOVE: 'mov',
     CREATE: 'crt',
+    DESTROY: 'dsy',
     ACTION: 'act',
     BREAK : 'brk',
     DAMAGE : 'dmg',
-    REQDAMAGE : 'rqd',
-    RSPDAMAGE : 'rpd',
+    REQDATA : 'rqd',
+    RSPDATA : 'rsd',
     DIAMOND: '$$$',
-    MYDIAMOND: 'my$'
+    MYDIAMOND: 'my$',
 }
 
 // TODO HACK HACK HHACK
@@ -89,7 +90,7 @@ chat.mq.init = function() {
     gm.config.mqtt.onFailure = chat.mq.onFailure;
     
     // debugger;
-    gm.config.mqtt.willMessage = (new chat.Message('have left.')).mqtt();
+    gm.config.mqtt.willMessage = (new chat.Message({type: chat.Message.types.DESTROY})).mqtt();
 
     // we shallow clone our connectOptions so that if we reconnect we don't inherit previous connection information.
     this.client.connect(_.clone(gm.config.mqtt));
@@ -100,7 +101,7 @@ chat.mq.onConnect = function() {
     console.log('Connected, subscribing to', topic)
     chat.mq.client.subscribe(topic);
     
-    var message = new chat.Message({type: chat.Message.types.REQDAMAGE});
+    var message = new chat.Message({type: chat.Message.types.REQDATA});
     chat.mq.client.send(message.mqtt());
     
 }
@@ -150,8 +151,16 @@ chat.mq.onMessageArrived = function(message) {
     if (msg.type == chat.Message.types.CREATE) {
         if (msg.clientId != chat.config.clientId) {
             gm.createPlayer(msg)
+            // update position for new client;
+            gm.movePlayer(gm.player, {idle: true, force: true})
         }
     } else 
+    if (msg.type == chat.Message.types.DESTROY) {
+        if (msg.clientId != chat.config.clientId) {
+            gm.destroyPlayer(msg)
+        }
+    } else 
+    
     if (msg.type == chat.Message.types.ACTION) {
         if (msg.clientId != chat.config.clientId) {
             gm.actionPlayer(msg)
@@ -183,12 +192,12 @@ chat.mq.onMessageArrived = function(message) {
             takeDiamond(msg.gameId, true)
         }
     } else
-    if (msg.type == chat.Message.types.REQDAMAGE) {
+    if (msg.type == chat.Message.types.REQDATA) {
         if (msg.clientId != chat.config.clientId) {
             // if the request is not for a specific client and we have the damage data send it to other client
             if (!msg.fromClientId && map && map.damagedTiles) {
                 var msg = {
-                    type:  chat.Message.types.RSPDAMAGE,
+                    type:  chat.Message.types.RSPDATA,
                     toClientId: msg.clientId
                 };
                 chat.mq.send(msg);
@@ -198,32 +207,50 @@ chat.mq.onMessageArrived = function(message) {
                     console.error('No Damage Data, Why does ', msg.clientId, 'want damage data from us?');
                     return;
                 }
+                var diamonds = [];
+                _.values(map.diamonds).forEach(function(diamond) {
+                    var msg = {
+                        gameId: diamond.gameId,
+                        type: '$$$',
+                        x: diamond.x,
+                        y: diamond.y,
+                        body: { velocity: { x : diamond.body.velocity.x, y : diamond.body.velocity.y } }
+                    }
+                    diamonds.push(msg)
+                })
+                var data = {
+                    damagedTiles: map.damagedTiles,
+                    diamonds : diamonds
+                }
+                console.debug('encoding REQDATA', data)
                 var msg = {
-                    type:  chat.Message.types.RSPDAMAGE,
+                    type:  chat.Message.types.RSPDATA,
                     topic: msg.toTopic,
-                    data: msgpack.encode(map.damagedTiles)
+                    data: msgpack.encode(data)
                 };
                 chat.mq.send(msg);
             }
         }
     } else 
-    if (msg.type == chat.Message.types.RSPDAMAGE) {
+    if (msg.type == chat.Message.types.RSPDATA) {
         if (msg.clientId != chat.config.clientId) {
             if (msg.toClientId === chat.config.clientId) {
                 var topic = buildTopic() + '.' + chat.config.clientId;
                 chat.mq.client.subscribe(topic);
                 var msg = {
-                    type:  chat.Message.types.REQDAMAGE,
+                    type:  chat.Message.types.REQDATA,
                     fromClientId: msg.clientId,
                     toTopic: topic
                 };
                 chat.mq.send(msg);
             } else if (msg.data) {
+                console.debug('Decoding RSPDATA')
                 var data = msgpack.decode(msg.data);
+                console.debug('RSPDATA', data)
                 if (!map) {
-                    gm.config.game.map.damagedTiles = data;
+                    gm.config.game.map.loadData = data;
                 } else {
-                    gm.damageTiles(data);
+                    gm.loadData(data);
                 }
             } else {
                 console.log('Ignoring RSPDAMAGE', msg);
