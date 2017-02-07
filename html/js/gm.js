@@ -267,7 +267,7 @@ GameMaster.prototype.damageTile = function(x, y, health) {
     chat.mq.send({type: 'dmg', x: x, y: y, health: health});
 }
 
-var wallTouched
+var wallTouched;
 GameMaster.prototype.updatePlayer = function(msg) {
     var self = this;
     if (msg.clientId === self.currentSessionId()) return;
@@ -302,10 +302,15 @@ GameMaster.prototype.updatePlayer = function(msg) {
     
     if (player.body.onWall() ) {
         wallTouched = true;
-    } else if (!wallTouched){
+    }; 
+    
+    if (!wallTouched){
         player.x = msg.x;
         wallTouched = false;
+    } else {
+        
     }
+    
     player.y = msg.y;
     player.body.velocity.x = msg.body.velocity.x;
     player.body.velocity.y = msg.body.velocity.y;

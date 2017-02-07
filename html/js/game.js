@@ -171,26 +171,37 @@ function actionTouchButton() {
 }
 
 function stickLeft() {
+    if (stick.isDown) console.log('stick x', stick.x)
     return stick.isDown &&
+        stick.x !== 1 &&
         // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
-        stick.x < 0; 
-}
-
-function stickUp() {
-    return stick.isDown &&
-        stick.y < -0.3; 
-}
-
-function stickDown() {
-    return stick.isDown &&
-        stick.y > 0.5; 
+        ( stickUp() || stickDown() ? stick.x < -0.3 : stick.x < -0.6) &&
+        stick.y < 0.6
+        ; 
 }
 
 function stickRight() {
     return stick.isDown &&
+        stick.x !== 1 &&
         // This is a value between -1 and 1 calculated based on the distance of the stick from its base. Where -1 is to the left of the base and +1 is to the right.
-        stick.x > 0; 
+        //stick.x > 0.6 &&
+        ( stickUp() || stickDown() ? stick.x > 0.3 : stick.x > 0.6) &&
+        stick.y < 0.6; 
 }
+
+function stickUp() {
+ 
+    return stick.isDown &&
+        stick.y < -0.4; 
+}
+
+function stickDown() {
+ 
+    return stick.isDown &&
+        stick.y > 0.4; 
+}
+
+
 
 function testTouch(sprite) {
     if (!sprite || !sprite.input) return false;
