@@ -325,7 +325,9 @@ function breakTile(tile, x, y) {
         
         map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
         gm.breakTile(x, player.y + y)
-        
+        var key = tile.x + '-' + tile.y;
+        map.damagedTiles[key] = 0;
+
         gm.config.game.breakCounter = Number(gm.config.game.breakCounter) + 1;
         breakCounterText.text  = gm.config.game.breakCounter + ' Tiles Busted';
         docCookies.setItem('breakCounter', gm.config.game.breakCounter);

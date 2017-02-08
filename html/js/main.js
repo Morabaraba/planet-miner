@@ -171,6 +171,9 @@ chat.mq.onMessageArrived = function(message) {
         if (tile) {
             particleBurst(new Phaser.Point(tile.worldX, tile.worldY));
             map.removeTileWorldXY(tile.worldX, tile.worldY, 16, 16)
+            var key = tile.x + '-' + tile.y;
+            map.damagedTiles[key] = 0;
+        
         }
     } else
     if (msg.type == chat.Message.types.DAMAGE) {
