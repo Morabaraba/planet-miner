@@ -65,7 +65,8 @@ function createMap(opt) {
     function onLoadComplete () {
         var self = this;
         setTimeout(function() {
-            map = game.add.tilemap('level1');
+            self.mapKey = 'level1';
+            map = game.add.tilemap(self.mapKey);
 
             // see functions below
             map.breakTile = breakTile;
@@ -89,13 +90,35 @@ function createMap(opt) {
                 gm.loadData(gm.config.game.map.loadData) 
             }
             
+            self.mapData = this.game.cache.getTilemapData(mapKey).data;
+            console.debug('mapData', self.mapData);
+            _.each(self.mapData.layers, function(layer, name) {
+                //console.debug('layer ', name, layer)
+                _.each(layer.objects, function(object) {
+                    //console.debug('obj', object);
+                    if (object.properties.gameType === 'portal') {
+                        // Create an empty sprite as a container
+                        var portal = game.add.sprite(object.x, object.y);
+                        portal.renderable = false;
+                        portal.width = object.width;
+                        portal.height = object.height;
+                        portal.toLevel = object.properties.toLevel;
+                        game.physics.enable(portal, Phaser.Physics.ARCADE);
+                        portal.body.immovable = true;
+                        portal.body.allowGravity = false;
+                        console.debug('created portal', object)
+                        gm.portals.push(portal);
+                    }
+                })
+            });
+            console.debug('created portals', gm.portals)
             setTimeout(function() {
                 root.gm.showGameScreen()
-
+                game.paused = false;
+                game.physics.arcade.isPaused = false;
                 game.physics.arcade.gravity.y = 250;
             }, 100);
-            game.paused = false;
-            game.physics.arcade.isPaused = false;
+
         }, 100)
 
     }
@@ -598,6 +621,15 @@ function update() {
         game.physics.arcade.collide(diamond, layer);
         if (game.physics.arcade.collide(diamond, player)) {
             takeDiamond(diamond.gameId);
+        }
+    })
+    
+    gm.portals.forEach(function(portal) {
+        //game.physics.arcade.overlap(portal, layer);
+        
+        if (game.physics.arcade.overlap(portal, player)) {
+            console.log('Player Portal Overlap');
+            gm.loadMap(portal.toLevel);
         }
     })
 

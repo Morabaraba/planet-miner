@@ -14,6 +14,7 @@ var GameMaster = function(GameMasterConfig) {
         self.sim = new Sim();
         // Well who is playing with you and who do you trust?
         self.players = {};
+        self.portals = [];
         var level = window.location.search.substring(1) || window.top.location.search.substring(1);
         // we use the hash as a instance identifier
         gm.config.game.instance = window.location.hash.slice(1) || window.top.location.hash.slice(1);
@@ -392,6 +393,13 @@ function Sim() {
     }    
 }
 
+GameMaster.prototype.loadMap = function(level) {
+    console.debug('load map', level);
+    chat.mq.client.unsubscribe(buildTopic());
+    gm.config.game.level = 'levels/' + level + '.json';
+    chat.mq.client.subscribe(buildTopic());
+    createMap({load: true});
+}
 GameMaster.prototype.loadData = function(data) {
     map.damagedTiles = data.damagedTiles;
 

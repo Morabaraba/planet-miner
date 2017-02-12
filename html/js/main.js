@@ -45,7 +45,7 @@ function buildTopic() {
 chat.Message.prototype.mqtt = function(topic) {
     var qos = 0;
     if (this.msg.type === chat.Message.types.BREAK || this.msg.type === chat.Message.types.DAMAGE) qos = 2;
-    console.log('Msg Created QOS', qos, this.msg.type, (this.msg.type === chat.Message.types.MESSAGE ? this.msg.text : ''));
+    //console.log('Msg Created QOS', qos, this.msg.type, (this.msg.type === chat.Message.types.MESSAGE ? this.msg.text : ''));
     var encodedData = msgpack.encode(this.msg);
     //console.log(encodedData);
     var message = new Paho.MQTT.Message(encodedData);
@@ -137,7 +137,7 @@ chat.mq.onMessageArrived = function(message) {
     }
     
     var msg = msgpack.decode(message.payloadBytes)
-    console.log('Msg Arrived', msg.type , msg.clientId)
+    //console.log('Msg Arrived', msg.type , msg.clientId)
     if (msg.type == chat.Message.types.MESSAGE) {
         if (msg.clientId == gm.currentSessionId()) return;
         
@@ -408,10 +408,8 @@ chat.vm.executeCommand = function (cmd) {
             //console.log('/level "levels/level1.json');
             return true;
         }
-        chat.mq.client.unsubscribe(buildTopic());
-        gm.config.game.level = 'levels/' + (cmdParts.slice(1).join(' ')) + '.json';
-        chat.mq.client.subscribe(buildTopic());
-        createMap({load: true});
+        var levelName = (cmdParts.slice(1).join(' '));
+        gm.loadMap(levelName)
         return true;
     };
     

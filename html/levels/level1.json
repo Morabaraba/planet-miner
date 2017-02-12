@@ -10,8 +10,36 @@
          "width":64,
          "x":0,
          "y":0
+        }, 
+        {
+         "draworder":"topdown",
+         "height":64,
+         "name":"Object Layer 1",
+         "objects":[
+                {
+                 "height":97,
+                 "id":1,
+                 "name":"to-level2",
+                 "properties":
+                    {
+                     "gameType":"portal",
+                     "toLevel":"levels\/level2.json"
+                    },
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":30,
+                 "x":-3,
+                 "y":777
+                }],
+         "opacity":1,
+         "type":"objectgroup",
+         "visible":true,
+         "width":64,
+         "x":0,
+         "y":0
         }],
- "nextobjectid":1,
+ "nextobjectid":4,
  "orientation":"orthogonal",
  "properties":
     {
@@ -32,6 +60,7 @@
 
             },
          "spacing":0,
+         "tilecount":68,
          "tileheight":16,
          "tilewidth":16
         }],
