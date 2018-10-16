@@ -2,7 +2,7 @@
 
 A Phaser experemint using MQTT to give multiplayer like functionality.
 
-[PLAY(WIP)](http://openhazel.co.za/games/planet-miner)
+[PLAY(WIP)](http://planeteer.mooo.com)
 
 Please note MQ Broker in USA and public so the demo will lag, Deploy your own local one for better performance.
 
